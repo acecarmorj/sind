@@ -100,7 +100,7 @@ Abra:
 O arquivo já vem preenchido com esta URL:
 
 ```javascript
-var API_URL = 'https://script.google.com/macros/s/AKfycbyprFavoafNGeVUvY3DYfte-3ZP4Mq9APgngotzSMmhKXUvMvUfw9r_YsXNqSqgmY-Y/exec';
+var API_URL = 'https://script.google.com/macros/s/AKfycbxq4imDxh7Cn7Uw08kQFwxPUVYMO28Fz-gIheqV_w0x_c6F_2A8iy54bXc1qAXc1rPuPQ/exec';
 ```
 
 Só troque se você publicar uma nova implantação diferente.
