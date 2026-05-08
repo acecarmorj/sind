@@ -1,0 +1,42 @@
+// BLOCO CORRIGIDO PARA USAR SEMPRE A MESMA PLANILHA
+// Cole este trecho no Code.gs, substituindo o SIND_SETUP,
+// _getOrCreateSpreadsheet_() e _getSpreadsheet_().
+
+var SIND_SETUP = {
+  SPREADSHEET_ID: '1UukS0ZqzOwQqNXAUQF6G02TbhlVx7wd_PMjsq7bRoo-75B8jp6yMg3wJ',
+  PDF_FOLDER_ID: '',
+  ADMIN_USERNAME: 'admin',
+  ADMIN_PASSWORD: '123456',
+  ADMIN_NAME: 'Administrador',
+  UNION_NAME: 'Sindicato do Comércio de Além Paraíba - MG'
+};
+
+function _getOrCreateSpreadsheet_() {
+  return _getSpreadsheet_();
+}
+
+function _getSpreadsheet_() {
+  var id = String(SIND_SETUP.SPREADSHEET_ID || '').trim();
+
+  if (!id) {
+    throw new Error('SPREADSHEET_ID não configurado.');
+  }
+
+  return SpreadsheetApp.openById(id);
+}
+
+// OPCIONAL: se você criou o Apps Script DENTRO da própria planilha
+// pelo menu Extensões > Apps Script, pode usar esta versão no lugar
+// da função _getSpreadsheet_ acima:
+
+/*
+function _getSpreadsheet_() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+
+  if (!ss) {
+    throw new Error('Nenhuma planilha ativa encontrada.');
+  }
+
+  return ss;
+}
+*/
