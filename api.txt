@@ -1,5 +1,7 @@
 var SIND_SETUP = {
-  SPREADSHEET_ID: '1UukS0ZqzOwQqNXAUQF6G02TbhlVx7wd_PMjsq7bRoo-75B8jp6yMg3wJ',
+  USE_ACTIVE_SPREADSHEET: true,
+  SPREADSHEET_NAME: 'db_sind',
+  SPREADSHEET_ID: '',
   PDF_FOLDER_ID: '',
   ADMIN_USERNAME: 'admin',
   ADMIN_PASSWORD: '123456',
@@ -260,14 +262,19 @@ function doPost(e) {
 }
 
 function createOrResolveSpreadsheetForSetup_() {
+  var active = SIND_SETUP.USE_ACTIVE_SPREADSHEET ? SpreadsheetApp.getActiveSpreadsheet() : null;
   var providedId = String(SIND_SETUP.SPREADSHEET_ID || '').trim();
+  var spreadsheetName = String(SIND_SETUP.SPREADSHEET_NAME || 'db_sind').trim() || 'db_sind';
+
+  if (active) {
+    return active;
+  }
 
   if (providedId && providedId.indexOf('COLE_AQUI') < 0) {
     return SpreadsheetApp.openById(providedId);
   }
 
-  var unionName = String(SIND_SETUP.UNION_NAME || 'Sindicato').trim() || 'Sindicato';
-  var spreadsheet = SpreadsheetApp.create(unionName + ' - Base');
+  var spreadsheet = SpreadsheetApp.create(spreadsheetName);
   return spreadsheet;
 }
 
@@ -275,6 +282,11 @@ function setupInitialProject_() {
   var props = PropertiesService.getScriptProperties();
   var spreadsheet = createOrResolveSpreadsheetForSetup_();
   var spreadsheetId = spreadsheet.getId();
+  var spreadsheetName = String(SIND_SETUP.SPREADSHEET_NAME || 'db_sind').trim();
+
+  if (spreadsheetName && spreadsheet.getName() !== spreadsheetName) {
+    spreadsheet.rename(spreadsheetName);
+  }
 
   props.setProperty(SIND_SECURITY.PROP_SPREADSHEET_ID, spreadsheetId);
   props.setProperty(SIND_SECURITY.PROP_UNION_NAME, String(SIND_SETUP.UNION_NAME || 'Sindicato').trim());
@@ -288,6 +300,11 @@ function setupInitialProject_() {
   writeConfigSheet_();
   seedDefaultAdminUser_();
   seedAuditLog_('SETUP', 'config', spreadsheetId, 'Projeto inicial configurado', 'system');
+}
+
+function setupPlanilhaNoMesmoSheets() {
+  setupInitialProject_();
+  return 'Planilha configurada no mesmo Google Sheets do projeto.';
 }
 
 function buildBootstrap_(session) {

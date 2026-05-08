@@ -34,9 +34,13 @@ Versão baseada no mesmo padrão do ACE Campo:
 ## Passo a passo
 
 ### 1. Planilha
-Você não precisa mais criar a planilha antes.
+Crie uma planilha nova no Google Sheets com o nome:
 
-Se `SIND_SETUP.SPREADSHEET_ID` estiver vazio, a função `setupInitialProject_()` cria uma planilha nova automaticamente e grava o ID nas propriedades do script.
+```text
+db_sind
+```
+
+Depois abra **Extensões > Apps Script** dentro dessa própria planilha.
 
 ### 2. Criar o projeto Apps Script
 Abra o Apps Script e crie um projeto novo.
@@ -60,12 +64,13 @@ No topo de `Code.gs`, preencha:
 No Apps Script, execute manualmente:
 
 ```javascript
-setupInitialProject_();
+setupPlanilhaNoMesmoSheets();
 ```
 
 Isso vai:
 
 - gravar as configurações
+- usar a própria planilha `db_sind`
 - criar as abas:
   - `Sindicalizados`
   - `Mensalidades`
