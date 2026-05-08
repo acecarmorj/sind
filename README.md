@@ -95,7 +95,7 @@ Abra:
 O arquivo já vem preenchido com esta URL:
 
 ```javascript
-var API_URL = 'https://script.google.com/macros/s/AKfycbzIyur0ZCqobXgfN6NSjklXGsk_D70KnuQEK1YuWfb2aDTOa6q18yiNGP2C_g6OBwqO/exec';
+var API_URL = 'https://script.google.com/macros/s/AKfycbyprFavoafNGeVUvY3DYfte-3ZP4Mq9APgngotzSMmhKXUvMvUfw9r_YsXNqSqgmY-Y/exec';
 ```
 
 Só troque se você publicar uma nova implantação diferente.
