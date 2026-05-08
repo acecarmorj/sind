@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sindicato | Cadastro, Mensalidades e Documentos</title>
+  <meta name="theme-color" content="#0f4c81" />
+  <link rel="stylesheet" href="./assets/styles.css" />
+</head>
+<body>
+  <div id="loginScreen" class="screen-screen">
+    <div class="card login-card">
+      <div class="brand-badge">SINDICATO</div>
+      <h1>Cadastro, mensalidades e documentos</h1>
+      <p class="muted">Sistema administrativo do sindicato</p>
+
+      <form id="loginForm" class="grid">
+        <label>
+          Usuário
+          <input id="loginUsername" value="admin" autocomplete="username" />
+        </label>
+
+        <label>
+          Senha
+          <input id="loginPassword" type="password" autocomplete="current-password" />
+        </label>
+
+        <button class="btn btn-primary" type="submit">Entrar</button>
+        <p id="loginMessage" class="message"></p>
+      </form>
+    </div>
+  </div>
+
+  <div id="appScreen" class="hidden">
+    <header class="topbar">
+      <div>
+        <h1>Sistema do Sindicato</h1>
+        <p id="unionName" class="muted">Carregando...</p>
+        <p class="muted small" id="buildInfo"></p>
+      </div>
+
+      <div class="actions">
+        <button id="refreshBtn" class="btn btn-secondary" type="button">Atualizar</button>
+        <button id="logoutBtn" class="btn btn-secondary" type="button">Sair</button>
+      </div>
+    </header>
+
+    <main class="page">
+      <p id="globalMessage" class="message"></p>
+
+      <section class="stats-grid">
+        <article class="stat-card">
+          <div class="stat-label">Sindicalizados ativos</div>
+          <div id="statMembers" class="stat-value">0</div>
+        </article>
+        <article class="stat-card">
+          <div class="stat-label">Mensalidades do mês</div>
+          <div id="statDues" class="stat-value">0</div>
+        </article>
+        <article class="stat-card">
+          <div class="stat-label">Pago no mês</div>
+          <div id="statPaid" class="stat-value">R$ 0,00</div>
+        </article>
+        <article class="stat-card">
+          <div class="stat-label">Em atraso</div>
+          <div id="statLate" class="stat-value">R$ 0,00</div>
+        </article>
+      </section>
+
+      <nav class="tabs">
+        <button class="tab-btn active" data-tab="cadastro" data-permission="members.read" type="button">Sindicalizados</button>
+        <button class="tab-btn" data-tab="mensalidades" data-permission="dues.read" type="button">Mensalidades</button>
+        <button class="tab-btn" data-tab="relatorios" data-permission="reports.read" type="button">Relatórios</button>
+        <button class="tab-btn" data-tab="documentos" data-permission="documents.read" type="button">Documentos</button>
+        <button class="tab-btn" data-tab="usuarios" data-permission="users.manage" type="button">Usuários</button>
+        <button class="tab-btn" data-tab="auditoria" data-permission="audit.read" type="button">Auditoria</button>
+      </nav>
+
+      <section class="tab-panel active" id="tab-cadastro">
+        <div class="layout-two">
+          <div class="card" data-permission="members.write">
+            <div class="section-head">
+              <h2 id="memberFormTitle">Novo sindicalizado</h2>
+              <button id="cancelMemberEditBtn" class="btn btn-secondary hidden" type="button">Cancelar edição</button>
+            </div>
+
+            <form id="memberForm" class="grid">
+              <input id="memberId" type="hidden" />
+
+              <div class="grid cols-3">
+                <label>
+                  Nome completo
+                  <input id="memberNome" required />
+                </label>
+                <label>
+                  CPF
+                  <input id="memberCpf" required maxlength="14" inputmode="numeric" />
+                </label>
+                <label>
+                  RG
+                  <input id="memberRg" />
+                </label>
+              </div>
+
+              <div class="grid cols-3">
+                <label>
+                  Data de nascimento
+                  <input id="memberNascimento" type="date" />
+                </label>
+                <label>
+                  E-mail
+                  <input id="memberEmail" type="email" />
+                </label>
+                <label>
+                  Telefone
+                  <input id="memberTelefone" maxlength="15" inputmode="numeric" />
+                </label>
+              </div>
+
+              <div class="grid cols-3">
+                <label>
+                  Endereço
+                  <input id="memberEndereco" />
+                </label>
+                <label>
+                  Bairro
+                  <input id="memberBairro" />
+                </label>
+                <label>
+                  CEP
+                  <input id="memberCep" maxlength="9" inputmode="numeric" />
+                </label>
+              </div>
+
+              <div class="grid cols-3">
+                <label>
+                  Cidade
+                  <input id="memberCidade" value="Além Paraíba" />
+                </label>
+                <label>
+                  UF
+                  <input id="memberUf" value="MG" maxlength="2" />
+                </label>
+                <label>
+                  Empresa
+                  <input id="memberEmpresa" />
+                </label>
+              </div>
+
+              <div class="grid cols-3">
+                <label>
+                  Cargo
+                  <input id="memberCargo" />
+                </label>
+                <label>
+                  Data de admissão
+                  <input id="memberAdmissao" type="date" />
+                </label>
+                <label>
+                  Data de filiação
+                  <input id="memberFiliacao" type="date" />
+                </label>
+              </div>
+
+              <div class="grid cols-2">
+                <label>
+                  Status
+                  <select id="memberStatus">
+                    <option value="ATIVO">ATIVO</option>
+                    <option value="PENDENTE">PENDENTE</option>
+                    <option value="INATIVO">INATIVO</option>
+                  </select>
+                </label>
+
+                <label>
+                  Observações
+                  <textarea id="memberObservacoes"></textarea>
+                </label>
+              </div>
+
+              <div class="actions">
+                <button class="btn btn-primary" type="submit">Salvar sindicalizado</button>
+              </div>
+
+              <p id="memberMessage" class="message"></p>
+            </form>
+          </div>
+
+          <div class="card">
+            <div class="section-head">
+              <h2>Sindicalizados</h2>
+              <div class="actions">
+                <button id="membersExportBtn" class="btn btn-secondary" data-permission="members.read" type="button">Exportar CSV</button>
+              </div>
+            </div>
+
+            <div class="toolbar compact">
+              <input id="memberSearch" class="grow" placeholder="Buscar por nome, CPF, empresa ou status" />
+              <select id="memberStatusFilter">
+                <option value="">Todos os status</option>
+                <option value="ATIVO">ATIVO</option>
+                <option value="PENDENTE">PENDENTE</option>
+                <option value="INATIVO">INATIVO</option>
+              </select>
+            </div>
+
+            <div class="table-wrap mt-16">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Nome</th>
+                    <th>CPF</th>
+                    <th>Empresa</th>
+                    <th>Telefone</th>
+                    <th>Status</th>
+                    <th>Ações</th>
+                  </tr>
+                </thead>
+                <tbody id="membersTableBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="tab-panel" id="tab-mensalidades">
+        <div class="layout-two">
+          <div class="card">
+            <div class="card-block" data-permission="dues.generate">
+              <h2>Gerar mensalidades em lote</h2>
+              <form id="batchForm" class="grid mt-16">
+                <div class="grid cols-3">
+                  <label>
+                    Competência
+                    <input id="batchCompetencia" type="month" />
+                  </label>
+                  <label>
+                    Valor padrão
+                    <input id="batchValor" type="text" inputmode="decimal" />
+                  </label>
+                  <label>
+                    Vencimento
+                    <input id="batchVencimento" type="date" />
+                  </label>
+                </div>
+
+                <div class="actions">
+                  <button class="btn btn-primary" type="submit">Gerar mensalidades</button>
+                </div>
+
+                <p id="batchMessage" class="message"></p>
+              </form>
+            </div>
+
+            <div class="divider"></div>
+
+            <div class="card-block" data-permission="dues.pay">
+              <h2>Registrar pagamento</h2>
+              <form id="paymentForm" class="grid mt-16">
+                <label>
+                  Mensalidade selecionada
+                  <input id="paymentTarget" disabled placeholder="Selecione na tabela abaixo" />
+                </label>
+
+                <div class="grid cols-3">
+                  <label>
+                    Pago em
+                    <input id="paymentDate" type="date" />
+                  </label>
+
+                  <label>
+                    Forma de pagamento
+                    <select id="paymentMethod">
+                      <option value="PIX">PIX</option>
+                      <option value="DINHEIRO">DINHEIRO</option>
+                      <option value="BOLETO">BOLETO</option>
+                      <option value="CARTAO">CARTAO</option>
+                      <option value="TRANSFERENCIA">TRANSFERENCIA</option>
+                      <option value="OUTRO">OUTRO</option>
+                    </select>
+                  </label>
+
+                  <label>
+                    Observações
+                    <input id="paymentNotes" />
+                  </label>
+                </div>
+
+                <div class="actions">
+                  <button class="btn btn-primary" type="submit">Quitar mensalidade</button>
+                  <button id="clearPaymentSelectionBtn" class="btn btn-secondary" type="button">Limpar seleção</button>
+                </div>
+
+                <p id="paymentMessage" class="message"></p>
+              </form>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="section-head">
+              <h2>Mensalidades</h2>
+              <button id="duesExportBtn" class="btn btn-secondary" type="button">Exportar CSV</button>
+            </div>
+
+            <div class="toolbar compact">
+              <label class="grow">
+                Competência
+                <input id="duesCompetencia" type="month" />
+              </label>
+              <label>
+                Status
+                <select id="duesStatusFilter">
+                  <option value="">Todos</option>
+                  <option value="ABERTA">ABERTA</option>
+                  <option value="PAGA">PAGA</option>
+                  <option value="ATRASADA">ATRASADA</option>
+                  <option value="CANCELADA">CANCELADA</option>
+                </select>
+              </label>
+              <label class="grow">
+                Buscar
+                <input id="duesSearch" placeholder="Nome, CPF ou forma de pagamento" />
+              </label>
+            </div>
+
+            <div class="table-wrap mt-16">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Nome</th>
+                    <th>Competência</th>
+                    <th>Valor</th>
+                    <th>Vencimento</th>
+                    <th>Pago em</th>
+                    <th>Status</th>
+                    <th>Ações</th>
+                  </tr>
+                </thead>
+                <tbody id="duesTableBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="tab-panel" id="tab-relatorios">
+        <div class="card">
+          <div class="section-head">
+            <h2>Relatório mensal</h2>
+            <div class="actions">
+              <input id="reportCompetencia" type="month" />
+              <button id="refreshReportBtn" class="btn btn-secondary" type="button">Atualizar relatório</button>
+              <button id="reportExportBtn" class="btn btn-secondary" type="button">Exportar CSV</button>
+            </div>
+          </div>
+
+          <section class="stats-grid mt-16">
+            <article class="stat-card">
+              <div class="stat-label">Total lançado</div>
+              <div id="reportLancado" class="stat-value">R$ 0,00</div>
+            </article>
+            <article class="stat-card">
+              <div class="stat-label">Total pago</div>
+              <div id="reportPago" class="stat-value">R$ 0,00</div>
+            </article>
+            <article class="stat-card">
+              <div class="stat-label">Total em aberto</div>
+              <div id="reportAberto" class="stat-value">R$ 0,00</div>
+            </article>
+            <article class="stat-card">
+              <div class="stat-label">Total em atraso</div>
+              <div id="reportAtrasado" class="stat-value">R$ 0,00</div>
+            </article>
+          </section>
+
+          <div class="section-head mt-16">
+            <h2>Inadimplentes da competência</h2>
+          </div>
+
+          <div class="table-wrap mt-16">
+            <table>
+              <thead>
+                <tr>
+                  <th>Nome</th>
+                  <th>CPF</th>
+                  <th>Total em atraso</th>
+                </tr>
+              </thead>
+              <tbody id="reportTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section class="tab-panel" id="tab-documentos">
+        <div class="layout-two">
+          <div class="card" data-permission="documents.issue">
+            <div class="section-head">
+              <h2>Emitir documentos</h2>
+            </div>
+
+            <form id="documentIssueForm" class="grid">
+              <label>
+                Sindicalizado
+                <select id="documentMemberId"></select>
+              </label>
+
+              <div class="grid cols-2">
+                <label>
+                  Tipo
+                  <select id="documentType">
+                    <option value="DECLARACAO_FILIACAO">Declaração de filiação</option>
+                    <option value="FICHA_CADASTRAL">Ficha cadastral</option>
+                    <option value="DECLARACAO_QUITACAO_ANUAL">Declaração de quitação anual</option>
+                  </select>
+                </label>
+                <label id="documentYearWrap">
+                  Ano de referência
+                  <input id="documentYear" type="number" min="2000" max="2100" />
+                </label>
+              </div>
+
+              <div class="actions">
+                <button class="btn btn-primary" type="submit">Gerar documento PDF</button>
+              </div>
+
+              <p class="note">A quitação anual só é emitida quando todas as mensalidades do ano estiverem pagas.</p>
+              <p id="documentIssueMessage" class="message"></p>
+            </form>
+
+            <div class="divider"></div>
+
+            <h2>Alterar minha senha</h2>
+            <form id="changePasswordForm" class="grid mt-16">
+              <div class="grid cols-3">
+                <label>
+                  Senha atual
+                  <input id="passwordCurrent" type="password" />
+                </label>
+                <label>
+                  Nova senha
+                  <input id="passwordNew" type="password" />
+                </label>
+                <label>
+                  Confirmar nova senha
+                  <input id="passwordConfirm" type="password" />
+                </label>
+              </div>
+
+              <div class="actions">
+                <button class="btn btn-secondary" type="submit">Atualizar senha</button>
+              </div>
+
+              <p id="changePasswordMessage" class="message"></p>
+            </form>
+          </div>
+
+          <div class="card">
+            <div class="section-head">
+              <h2>Histórico de documentos</h2>
+              <div class="actions">
+                <button id="documentsRefreshBtn" class="btn btn-secondary" type="button">Atualizar</button>
+                <button id="documentsExportBtn" class="btn btn-secondary" type="button">Exportar CSV</button>
+              </div>
+            </div>
+
+            <div class="toolbar compact">
+              <input id="documentsSearch" class="grow" placeholder="Buscar por nome, número, tipo ou competência" />
+              <select id="documentsTypeFilter">
+                <option value="">Todos os tipos</option>
+                <option value="RECIBO_MENSALIDADE">Recibo</option>
+                <option value="DECLARACAO_FILIACAO">Declaração de filiação</option>
+                <option value="FICHA_CADASTRAL">Ficha cadastral</option>
+                <option value="DECLARACAO_QUITACAO_ANUAL">Quitação anual</option>
+              </select>
+              <input id="documentsYearFilter" type="number" min="2000" max="2100" placeholder="Ano" />
+            </div>
+
+            <div class="table-wrap mt-16">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Número</th>
+                    <th>Tipo</th>
+                    <th>Nome</th>
+                    <th>Competência</th>
+                    <th>Emissão</th>
+                    <th>Ações</th>
+                  </tr>
+                </thead>
+                <tbody id="documentsTableBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="tab-panel" id="tab-usuarios">
+        <div class="layout-two">
+          <div class="card">
+            <div class="section-head">
+              <h2 id="userFormTitle">Novo usuário</h2>
+              <button id="cancelUserEditBtn" class="btn btn-secondary hidden" type="button">Cancelar edição</button>
+            </div>
+
+            <form id="userForm" class="grid">
+              <input id="userId" type="hidden" />
+
+              <div class="grid cols-2">
+                <label>
+                  Nome
+                  <input id="userNome" />
+                </label>
+                <label>
+                  Login
+                  <input id="userUsername" />
+                </label>
+              </div>
+
+              <div class="grid cols-3">
+                <label>
+                  Perfil
+                  <select id="userRole">
+                    <option value="ADMIN">ADMIN</option>
+                    <option value="SECRETARIA">SECRETARIA</option>
+                    <option value="FINANCEIRO">FINANCEIRO</option>
+                    <option value="CONSULTA">CONSULTA</option>
+                  </select>
+                </label>
+                <label>
+                  Status
+                  <select id="userStatus">
+                    <option value="ATIVO">ATIVO</option>
+                    <option value="INATIVO">INATIVO</option>
+                  </select>
+                </label>
+                <label>
+                  Senha
+                  <input id="userPassword" type="password" placeholder="Obrigatória no cadastro" />
+                </label>
+              </div>
+
+              <div class="actions">
+                <button class="btn btn-primary" type="submit">Salvar usuário</button>
+                <button id="usersExportBtn" class="btn btn-secondary" type="button">Exportar CSV</button>
+              </div>
+
+              <p class="note">Ao editar, a senha pode ficar em branco para manter a atual.</p>
+              <p id="userMessage" class="message"></p>
+            </form>
+          </div>
+
+          <div class="card">
+            <div class="section-head">
+              <h2>Usuários do sistema</h2>
+              <button id="usersRefreshBtn" class="btn btn-secondary" type="button">Atualizar</button>
+            </div>
+
+            <div class="table-wrap mt-16">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Nome</th>
+                    <th>Login</th>
+                    <th>Perfil</th>
+                    <th>Status</th>
+                    <th>Ações</th>
+                  </tr>
+                </thead>
+                <tbody id="usersTableBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="tab-panel" id="tab-auditoria">
+        <div class="card">
+          <div class="section-head">
+            <h2>Auditoria</h2>
+            <button id="auditRefreshBtn" class="btn btn-secondary" type="button">Atualizar</button>
+          </div>
+
+          <div class="table-wrap mt-16">
+            <table>
+              <thead>
+                <tr>
+                  <th>Data</th>
+                  <th>Usuário</th>
+                  <th>Ação</th>
+                  <th>Entidade</th>
+                  <th>Detalhes</th>
+                </tr>
+              </thead>
+              <tbody id="auditTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="./assets/runtime-config.js"></script>
+  <script src="./assets/api.js"></script>
+  <script src="./assets/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,7 @@
+# Frontend estático
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/

@@ -1,0 +1,2054 @@
+var SIND_SETUP = {
+  SPREADSHEET_ID: '',
+  PDF_FOLDER_ID: '',
+  ADMIN_USERNAME: 'admin',
+  ADMIN_PASSWORD: '123456',
+  ADMIN_NAME: 'Administrador',
+  UNION_NAME: 'Sindicato do Comércio de Além Paraíba - MG'
+};
+
+var SIND_SECURITY = {
+  PROP_SPREADSHEET_ID: 'SIND_SPREADSHEET_ID',
+  PROP_PDF_FOLDER_ID: 'SIND_PDF_FOLDER_ID',
+  PROP_UNION_NAME: 'SIND_UNION_NAME',
+  SESSION_PREFIX: 'SIND_SESSION_'
+};
+
+var SIND_SHEETS = {
+  MEMBERS: 'Sindicalizados',
+  DUES: 'Mensalidades',
+  DOCUMENTS: 'Documentos',
+  CONFIG: 'Config',
+  AUDIT: 'Auditoria',
+  USERS: 'Usuarios'
+};
+
+var SIND_ROLES = {
+  ADMIN: 'ADMIN',
+  SECRETARIA: 'SECRETARIA',
+  FINANCEIRO: 'FINANCEIRO',
+  CONSULTA: 'CONSULTA'
+};
+
+var PERMISSION_GROUPS = {
+  ADMIN: [
+    'dashboard.read',
+    'members.read',
+    'members.write',
+    'members.inactivate',
+    'dues.read',
+    'dues.generate',
+    'dues.pay',
+    'reports.read',
+    'documents.read',
+    'documents.issue',
+    'audit.read',
+    'users.manage',
+    'password.change'
+  ],
+  SECRETARIA: [
+    'dashboard.read',
+    'members.read',
+    'members.write',
+    'documents.read',
+    'documents.issue',
+    'password.change'
+  ],
+  FINANCEIRO: [
+    'dashboard.read',
+    'members.read',
+    'dues.read',
+    'dues.generate',
+    'dues.pay',
+    'reports.read',
+    'documents.read',
+    'documents.issue',
+    'password.change'
+  ],
+  CONSULTA: [
+    'dashboard.read',
+    'members.read',
+    'dues.read',
+    'reports.read',
+    'documents.read',
+    'password.change'
+  ]
+};
+
+var MEMBER_HEADERS = [
+  'id',
+  'nome',
+  'cpf',
+  'rg',
+  'dataNascimento',
+  'email',
+  'telefone',
+  'endereco',
+  'bairro',
+  'cidade',
+  'uf',
+  'cep',
+  'empresa',
+  'cargo',
+  'dataAdmissao',
+  'dataFiliacao',
+  'status',
+  'observacoes',
+  'createdAt',
+  'updatedAt'
+];
+
+var DUE_HEADERS = [
+  'id',
+  'memberId',
+  'memberNome',
+  'memberCpf',
+  'competencia',
+  'valor',
+  'vencimento',
+  'pagoEm',
+  'formaPagamento',
+  'status',
+  'observacoes',
+  'createdAt',
+  'updatedAt'
+];
+
+var DOCUMENT_HEADERS = [
+  'id',
+  'tipo',
+  'numero',
+  'memberId',
+  'memberNome',
+  'dueId',
+  'competencia',
+  'descricao',
+  'driveFileId',
+  'driveFileName',
+  'mimeType',
+  'createdBy',
+  'createdAt'
+];
+
+var AUDIT_HEADERS = [
+  'timestamp',
+  'username',
+  'action',
+  'entity',
+  'entityId',
+  'details'
+];
+
+var USER_HEADERS = [
+  'id',
+  'nome',
+  'username',
+  'passwordHash',
+  'role',
+  'status',
+  'createdAt',
+  'updatedAt'
+];
+
+var DOCUMENT_TYPES = {
+  RECEIPT: 'RECIBO_MENSALIDADE',
+  AFFILIATION: 'DECLARACAO_FILIACAO',
+  MEMBER_FORM: 'FICHA_CADASTRAL',
+  ANNUAL_CLEARANCE: 'DECLARACAO_QUITACAO_ANUAL'
+};
+
+function doGet(e) {
+  try {
+    var action = normalizeAction_((e && e.parameter && e.parameter.action) || '');
+
+    if (action === 'health') {
+      return jsonResponse_(true, 'OK', {
+        service: 'sindicato-apps-script',
+        version: '2026-05-07-v3'
+      });
+    }
+
+    return jsonResponse_(false, 'Ação GET inválida.');
+  } catch (error) {
+    return handleError_(error);
+  }
+}
+
+function doPost(e) {
+  try {
+    var body = parseJsonBody_(e);
+    var action = normalizeAction_(body.action || '');
+    var payload = body.payload || {};
+    var sessionToken = String(body.sessionToken || '').trim();
+
+    if (action === 'login') {
+      return jsonResponse_(true, 'OK', login_(payload));
+    }
+
+    if (action === 'logout') {
+      return jsonResponse_(true, 'OK', logout_(sessionToken));
+    }
+
+    var session = requireSession_(sessionToken);
+
+    switch (action) {
+      case 'bootstrap':
+        requirePermission_(session, 'dashboard.read');
+        return jsonResponse_(true, 'OK', buildBootstrap_(session));
+      case 'members_list':
+        requirePermission_(session, 'members.read');
+        return jsonResponse_(true, 'OK', { items: listMembers_(payload) });
+      case 'member_save':
+        requirePermission_(session, 'members.write');
+        return jsonResponse_(true, 'OK', saveMember_(payload, session.username));
+      case 'member_inactivate':
+        requirePermission_(session, 'members.inactivate');
+        return jsonResponse_(true, 'OK', inactivateMember_(payload.id, session.username));
+      case 'dues_generate_batch':
+        requirePermission_(session, 'dues.generate');
+        return jsonResponse_(true, 'OK', generateBatchDues_(payload, session.username));
+      case 'dues_list':
+        requirePermission_(session, 'dues.read');
+        return jsonResponse_(true, 'OK', { items: listDues_(payload) });
+      case 'due_pay':
+        requirePermission_(session, 'dues.pay');
+        return jsonResponse_(true, 'OK', payDue_(payload, session.username));
+      case 'monthly_report':
+        requirePermission_(session, 'reports.read');
+        return jsonResponse_(true, 'OK', buildMonthlyReport_(payload.competencia));
+      case 'receipt_issue':
+        requirePermission_(session, 'documents.issue');
+        return jsonResponse_(true, 'OK', issueReceipt_(payload.dueId, session.username));
+      case 'member_declaration':
+        requirePermission_(session, 'documents.issue');
+        return jsonResponse_(true, 'OK', issueMemberDeclaration_(payload.memberId, session.username));
+      case 'member_profile_pdf':
+        requirePermission_(session, 'documents.issue');
+        return jsonResponse_(true, 'OK', issueMemberFicha_(payload.memberId, session.username));
+      case 'annual_clearance_issue':
+        requirePermission_(session, 'documents.issue');
+        return jsonResponse_(true, 'OK', issueAnnualClearance_(payload.memberId, payload.ano, session.username));
+      case 'documents_list':
+        requirePermission_(session, 'documents.read');
+        return jsonResponse_(true, 'OK', { items: listDocuments_(payload) });
+      case 'document_download':
+        requirePermission_(session, 'documents.read');
+        return jsonResponse_(true, 'OK', downloadDocument_(payload.documentId));
+      case 'audit_logs':
+        requirePermission_(session, 'audit.read');
+        return jsonResponse_(true, 'OK', { items: listAuditLogs_(payload.limit) });
+      case 'export_csv':
+        return jsonResponse_(true, 'OK', exportCsv_(payload, session));
+      case 'users_list':
+        requirePermission_(session, 'users.manage');
+        return jsonResponse_(true, 'OK', { items: listUsers_() });
+      case 'user_save':
+        requirePermission_(session, 'users.manage');
+        return jsonResponse_(true, 'OK', saveUser_(payload, session.username));
+      case 'user_toggle_status':
+        requirePermission_(session, 'users.manage');
+        return jsonResponse_(true, 'OK', toggleUserStatus_(payload.id, session.username));
+      case 'change_password':
+        requirePermission_(session, 'password.change');
+        return jsonResponse_(true, 'OK', changePassword_(session, payload));
+      default:
+        throw new Error('Ação inválida.');
+    }
+  } catch (error) {
+    return handleError_(error);
+  }
+}
+
+function createOrResolveSpreadsheetForSetup_() {
+  var providedId = String(SIND_SETUP.SPREADSHEET_ID || '').trim();
+
+  if (providedId && providedId.indexOf('COLE_AQUI') < 0) {
+    return SpreadsheetApp.openById(providedId);
+  }
+
+  var unionName = String(SIND_SETUP.UNION_NAME || 'Sindicato').trim() || 'Sindicato';
+  var spreadsheet = SpreadsheetApp.create(unionName + ' - Base');
+  return spreadsheet;
+}
+
+function setupInitialProject_() {
+  var props = PropertiesService.getScriptProperties();
+  var spreadsheet = createOrResolveSpreadsheetForSetup_();
+  var spreadsheetId = spreadsheet.getId();
+
+  props.setProperty(SIND_SECURITY.PROP_SPREADSHEET_ID, spreadsheetId);
+  props.setProperty(SIND_SECURITY.PROP_UNION_NAME, String(SIND_SETUP.UNION_NAME || 'Sindicato').trim());
+
+  if (String(SIND_SETUP.PDF_FOLDER_ID || '').trim()) {
+    props.setProperty(SIND_SECURITY.PROP_PDF_FOLDER_ID, String(SIND_SETUP.PDF_FOLDER_ID || '').trim());
+  }
+
+  ensureAllSheets_();
+  ensurePdfFolder_();
+  writeConfigSheet_();
+  seedDefaultAdminUser_();
+  seedAuditLog_('SETUP', 'config', spreadsheetId, 'Projeto inicial configurado', 'system');
+}
+
+function buildBootstrap_(session) {
+  var unionName = getUnionName_();
+  var month = currentMonth_();
+  var members = hasPermission_(session, 'members.read') ? listMembers_({}) : [];
+  var report = hasPermission_(session, 'reports.read') ? buildMonthlyReport_(month) : {
+    itens: [],
+    totalPago: 0,
+    totalAtrasado: 0
+  };
+
+  return {
+    username: session.username,
+    userId: session.userId,
+    displayName: session.nome,
+    role: session.role,
+    permissions: session.permissions,
+    currentCompetencia: month,
+    unionName: unionName,
+    availableRoles: Object.keys(PERMISSION_GROUPS),
+    documentTypes: [
+      DOCUMENT_TYPES.AFFILIATION,
+      DOCUMENT_TYPES.MEMBER_FORM,
+      DOCUMENT_TYPES.ANNUAL_CLEARANCE
+    ],
+    stats: {
+      activeMembers: members.filter(function (item) { return item.status === 'ATIVO'; }).length,
+      monthlyDues: report.itens.length,
+      totalPaid: report.totalPago,
+      totalLate: report.totalAtrasado
+    }
+  };
+}
+
+function login_(payload) {
+  var username = String(payload.username || '').trim();
+  var password = String(payload.password || '');
+
+  if (!username || !password) {
+    throw new Error('Informe usuário e senha.');
+  }
+
+  var user = findUserByUsername_(username);
+
+  if (!user || user.status !== 'ATIVO' || user.passwordHash !== sha256_(password)) {
+    throw new Error('Usuário ou senha inválidos.');
+  }
+
+  var token = generateId_();
+  var session = {
+    userId: user.id,
+    username: user.username,
+    nome: user.nome,
+    role: user.role,
+    permissions: permissionsForRole_(user.role),
+    createdAt: new Date().toISOString()
+  };
+
+  CacheService.getScriptCache().put(
+    SIND_SECURITY.SESSION_PREFIX + token,
+    JSON.stringify(session),
+    60 * 60 * 6
+  );
+
+  seedAuditLog_('LOGIN', 'session', token, 'Login efetuado', user.username);
+
+  return {
+    sessionToken: token,
+    username: user.username,
+    displayName: user.nome,
+    role: user.role,
+    permissions: session.permissions
+  };
+}
+
+function logout_(sessionToken) {
+  if (sessionToken) {
+    CacheService.getScriptCache().remove(SIND_SECURITY.SESSION_PREFIX + sessionToken);
+  }
+  return { ok: true };
+}
+
+function requireSession_(token) {
+  var raw = CacheService.getScriptCache().get(SIND_SECURITY.SESSION_PREFIX + token);
+  if (!raw) {
+    throw new Error('Sessão inválida ou expirada.');
+  }
+
+  var session = JSON.parse(raw);
+  session.permissions = permissionsForRole_(session.role);
+  return session;
+}
+
+function requirePermission_(session, permission) {
+  if (!hasPermission_(session, permission)) {
+    throw new Error('Você não tem permissão para executar esta ação.');
+  }
+}
+
+function hasPermission_(session, permission) {
+  return permissionsForRole_(session && session.role).indexOf(permission) >= 0;
+}
+
+function permissionsForRole_(role) {
+  return (PERMISSION_GROUPS[String(role || '').trim()] || []).slice();
+}
+
+function getTargetSpreadsheet_() {
+  var secureId = String(getScriptProperty_(SIND_SECURITY.PROP_SPREADSHEET_ID, '') || '').trim();
+
+  if (secureId) {
+    return SpreadsheetApp.openById(secureId);
+  }
+
+  var active = SpreadsheetApp.getActiveSpreadsheet();
+  if (active) {
+    return active;
+  }
+
+  throw new Error('Planilha não configurada.');
+}
+
+function getUnionName_() {
+  return String(getScriptProperty_(SIND_SECURITY.PROP_UNION_NAME, SIND_SETUP.UNION_NAME || 'Sindicato')).trim();
+}
+
+function getPdfFolder_() {
+  var folderId = String(getScriptProperty_(SIND_SECURITY.PROP_PDF_FOLDER_ID, '') || '').trim();
+  if (!folderId) {
+    return ensurePdfFolder_();
+  }
+  return DriveApp.getFolderById(folderId);
+}
+
+function ensurePdfFolder_() {
+  var props = PropertiesService.getScriptProperties();
+  var folderId = String(props.getProperty(SIND_SECURITY.PROP_PDF_FOLDER_ID) || '').trim();
+  if (folderId) {
+    return DriveApp.getFolderById(folderId);
+  }
+
+  var folder = DriveApp.createFolder('Documentos - ' + getUnionName_());
+  props.setProperty(SIND_SECURITY.PROP_PDF_FOLDER_ID, folder.getId());
+  return folder;
+}
+
+function ensureAllSheets_() {
+  ensureSheet_(SIND_SHEETS.MEMBERS, MEMBER_HEADERS);
+  ensureSheet_(SIND_SHEETS.DUES, DUE_HEADERS);
+  ensureSheet_(SIND_SHEETS.DOCUMENTS, DOCUMENT_HEADERS);
+  ensureSheet_(SIND_SHEETS.CONFIG, ['chave', 'valor']);
+  ensureSheet_(SIND_SHEETS.AUDIT, AUDIT_HEADERS);
+  ensureSheet_(SIND_SHEETS.USERS, USER_HEADERS);
+}
+
+function ensureSheet_(sheetName, headers) {
+  var ss = getTargetSpreadsheet_();
+  var sheet = ss.getSheetByName(sheetName);
+
+  if (!sheet) {
+    sheet = ss.insertSheet(sheetName);
+  }
+
+  var headerRange = sheet.getRange(1, 1, 1, headers.length);
+  var current = headerRange.getDisplayValues()[0] || [];
+  var match = current.length === headers.length && headers.every(function (header, index) {
+    return String(current[index] || '') === String(header);
+  });
+
+  if (!match) {
+    headerRange.setValues([headers]);
+    headerRange.setFontWeight('bold');
+    sheet.setFrozenRows(1);
+  }
+
+  if (sheet.getMaxColumns() < headers.length) {
+    sheet.insertColumnsAfter(sheet.getMaxColumns(), headers.length - sheet.getMaxColumns());
+  }
+
+  return sheet;
+}
+
+function writeConfigSheet_() {
+  var sheet = ensureSheet_(SIND_SHEETS.CONFIG, ['chave', 'valor']);
+  var rows = [
+    ['union_name', getUnionName_()],
+    ['spreadsheet_id', getScriptProperty_(SIND_SECURITY.PROP_SPREADSHEET_ID, '')],
+    ['pdf_folder_id', getScriptProperty_(SIND_SECURITY.PROP_PDF_FOLDER_ID, '')],
+    ['updated_at', new Date().toISOString()]
+  ];
+
+  clearSheetBody_(sheet);
+  sheet.getRange(2, 1, rows.length, 2).setValues(rows);
+}
+
+function clearSheetBody_(sheet) {
+  if (sheet.getLastRow() > 1) {
+    sheet.getRange(2, 1, sheet.getLastRow() - 1, Math.max(1, sheet.getLastColumn())).clearContent();
+  }
+}
+
+function seedDefaultAdminUser_() {
+  var users = listUsers_();
+  if (users.length) {
+    return;
+  }
+
+  var now = new Date().toISOString();
+  ensureSheet_(SIND_SHEETS.USERS, USER_HEADERS).appendRow([
+    generateId_(),
+    String(SIND_SETUP.ADMIN_NAME || 'Administrador'),
+    String(SIND_SETUP.ADMIN_USERNAME || 'admin').trim(),
+    sha256_(String(SIND_SETUP.ADMIN_PASSWORD || '')),
+    SIND_ROLES.ADMIN,
+    'ATIVO',
+    now,
+    now
+  ]);
+}
+
+function listMembers_(payload) {
+  var rows = getSheetRows_(SIND_SHEETS.MEMBERS, MEMBER_HEADERS);
+  var items = rows.map(function (row, index) {
+    return rowToMember_(row, index + 2);
+  }).filter(function (item) {
+    return item.id && item.nome;
+  });
+
+  var search = String((payload && payload.search) || '').trim().toLowerCase();
+  var status = String((payload && payload.status) || '').trim();
+
+  return items.filter(function (item) {
+    if (status && item.status !== status) {
+      return false;
+    }
+    if (!search) {
+      return true;
+    }
+    return [
+      item.nome,
+      item.cpf,
+      item.empresa,
+      item.telefone,
+      item.status
+    ].join(' ').toLowerCase().indexOf(search) >= 0;
+  }).sort(function (a, b) {
+    return a.nome.localeCompare(b.nome, 'pt-BR');
+  });
+}
+
+function saveMember_(payload, username) {
+  var data = normalizeMemberPayload_(payload);
+  var lock = LockService.getScriptLock();
+  lock.waitLock(20000);
+
+  try {
+    var sheet = ensureSheet_(SIND_SHEETS.MEMBERS, MEMBER_HEADERS);
+    var items = listMembers_({});
+    var duplicate = items.find(function (item) {
+      return item.cpf === data.cpf && item.id !== data.id;
+    });
+
+    if (duplicate) {
+      throw new Error('Já existe sindicalizado com este CPF.');
+    }
+
+    var now = new Date().toISOString();
+
+    if (data.id) {
+      var existing = findMemberById_(data.id);
+      if (!existing || !existing.rowNumber) {
+        throw new Error('Sindicalizado não encontrado.');
+      }
+
+      var updated = {
+        id: existing.id,
+        nome: data.nome,
+        cpf: data.cpf,
+        rg: data.rg,
+        dataNascimento: data.dataNascimento,
+        email: data.email,
+        telefone: data.telefone,
+        endereco: data.endereco,
+        bairro: data.bairro,
+        cidade: data.cidade,
+        uf: data.uf,
+        cep: data.cep,
+        empresa: data.empresa,
+        cargo: data.cargo,
+        dataAdmissao: data.dataAdmissao,
+        dataFiliacao: data.dataFiliacao,
+        status: data.status,
+        observacoes: data.observacoes,
+        createdAt: existing.createdAt,
+        updatedAt: now
+      };
+
+      sheet.getRange(existing.rowNumber, 1, 1, MEMBER_HEADERS.length).setValues([serializeMember_(updated)]);
+      seedAuditLog_('UPDATE', 'member', updated.id, updated.nome + ' / CPF ' + updated.cpf, username);
+      return updated;
+    }
+
+    var created = {
+      id: generateId_(),
+      nome: data.nome,
+      cpf: data.cpf,
+      rg: data.rg,
+      dataNascimento: data.dataNascimento,
+      email: data.email,
+      telefone: data.telefone,
+      endereco: data.endereco,
+      bairro: data.bairro,
+      cidade: data.cidade,
+      uf: data.uf,
+      cep: data.cep,
+      empresa: data.empresa,
+      cargo: data.cargo,
+      dataAdmissao: data.dataAdmissao,
+      dataFiliacao: data.dataFiliacao,
+      status: data.status,
+      observacoes: data.observacoes,
+      createdAt: now,
+      updatedAt: now
+    };
+
+    sheet.appendRow(serializeMember_(created));
+    seedAuditLog_('CREATE', 'member', created.id, created.nome + ' / CPF ' + created.cpf, username);
+    return created;
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function inactivateMember_(memberId, username) {
+  var member = findMemberById_(memberId);
+  if (!member || !member.rowNumber) {
+    throw new Error('Sindicalizado não encontrado.');
+  }
+
+  member.status = 'INATIVO';
+  member.updatedAt = new Date().toISOString();
+
+  ensureSheet_(SIND_SHEETS.MEMBERS, MEMBER_HEADERS)
+    .getRange(member.rowNumber, 1, 1, MEMBER_HEADERS.length)
+    .setValues([serializeMember_(member)]);
+
+  seedAuditLog_('INACTIVATE', 'member', member.id, member.nome + ' / CPF ' + member.cpf, username);
+  return member;
+}
+
+function generateBatchDues_(payload, username) {
+  var competencia = String(payload.competencia || '').trim();
+  var valor = parseNumber_(payload.valor);
+  var vencimento = String(payload.vencimento || '').trim();
+
+  validateCompetencia_(competencia);
+  validateDateInput_(vencimento);
+
+  if (valor <= 0) {
+    throw new Error('Valor da mensalidade deve ser maior que zero.');
+  }
+
+  var lock = LockService.getScriptLock();
+  lock.waitLock(20000);
+
+  try {
+    var members = listMembers_({ status: 'ATIVO' });
+    var dues = listDues_({ competencia: competencia });
+    var existingMap = {};
+    dues.forEach(function (due) {
+      existingMap[due.memberId + ':' + due.competencia] = true;
+    });
+
+    var sheet = ensureSheet_(SIND_SHEETS.DUES, DUE_HEADERS);
+    var createdCount = 0;
+    var skippedCount = 0;
+    var now = new Date().toISOString();
+
+    members.forEach(function (member) {
+      var key = member.id + ':' + competencia;
+      if (existingMap[key]) {
+        skippedCount += 1;
+        return;
+      }
+
+      var due = {
+        id: generateId_(),
+        memberId: member.id,
+        memberNome: member.nome,
+        memberCpf: member.cpf,
+        competencia: competencia,
+        valor: valor,
+        vencimento: vencimento,
+        pagoEm: '',
+        formaPagamento: '',
+        status: resolveDueStatus_({
+          vencimento: vencimento,
+          pagoEm: '',
+          status: 'ABERTA'
+        }),
+        observacoes: '',
+        createdAt: now,
+        updatedAt: now
+      };
+
+      sheet.appendRow(serializeDue_(due));
+      createdCount += 1;
+    });
+
+    seedAuditLog_('GENERATE_BATCH', 'due', competencia, 'Criadas ' + createdCount + ' mensalidades / ignoradas ' + skippedCount, username);
+    return {
+      createdCount: createdCount,
+      skippedCount: skippedCount
+    };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function listDues_(payload) {
+  var rows = getSheetRows_(SIND_SHEETS.DUES, DUE_HEADERS);
+  var items = rows.map(function (row, index) {
+    return rowToDue_(row, index + 2);
+  }).filter(function (item) {
+    return item.id && item.memberId;
+  });
+
+  var competencia = String((payload && payload.competencia) || '').trim();
+  var search = String((payload && payload.search) || '').trim().toLowerCase();
+  var status = String((payload && payload.status) || '').trim();
+  var memberId = String((payload && payload.memberId) || '').trim();
+
+  items = items.map(function (item) {
+    item.status = resolveDueStatus_(item);
+    return item;
+  });
+
+  return items.filter(function (item) {
+    if (competencia && item.competencia !== competencia) {
+      return false;
+    }
+    if (memberId && item.memberId !== memberId) {
+      return false;
+    }
+    if (status && item.status !== status) {
+      return false;
+    }
+    if (!search) {
+      return true;
+    }
+    return [
+      item.memberNome,
+      item.memberCpf,
+      item.formaPagamento,
+      item.status,
+      item.competencia
+    ].join(' ').toLowerCase().indexOf(search) >= 0;
+  }).sort(function (a, b) {
+    if (a.competencia !== b.competencia) {
+      return b.competencia.localeCompare(a.competencia);
+    }
+    return a.memberNome.localeCompare(b.memberNome, 'pt-BR');
+  });
+}
+
+function payDue_(payload, username) {
+  var dueId = String(payload.dueId || '').trim();
+  var pagoEm = String(payload.pagoEm || '').trim();
+  var formaPagamento = String(payload.formaPagamento || '').trim();
+  var observacoes = String(payload.observacoes || '').trim();
+
+  validateDateInput_(pagoEm);
+  if (!formaPagamento) {
+    throw new Error('Informe a forma de pagamento.');
+  }
+
+  var lock = LockService.getScriptLock();
+  lock.waitLock(20000);
+
+  try {
+    var due = findDueById_(dueId);
+    if (!due || !due.rowNumber) {
+      throw new Error('Mensalidade não encontrada.');
+    }
+
+    due.pagoEm = pagoEm;
+    due.formaPagamento = formaPagamento;
+    due.status = 'PAGA';
+    due.observacoes = observacoes || due.observacoes || '';
+    due.updatedAt = new Date().toISOString();
+
+    ensureSheet_(SIND_SHEETS.DUES, DUE_HEADERS)
+      .getRange(due.rowNumber, 1, 1, DUE_HEADERS.length)
+      .setValues([serializeDue_(due)]);
+
+    seedAuditLog_('PAY', 'due', due.id, due.memberNome + ' / ' + due.competencia + ' / ' + due.valor, username);
+    return due;
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function buildMonthlyReport_(competencia) {
+  validateCompetencia_(competencia);
+  var items = listDues_({ competencia: competencia });
+  var totalLancado = 0;
+  var totalPago = 0;
+  var totalAberto = 0;
+  var totalAtrasado = 0;
+  var quantidadePagos = 0;
+  var quantidadeEmAberto = 0;
+  var quantidadeAtrasados = 0;
+  var quantidadeCancelados = 0;
+  var inadimplentesMap = {};
+
+  items.forEach(function (item) {
+    if (item.status !== 'CANCELADA') {
+      totalLancado += Number(item.valor || 0);
+    }
+
+    if (item.status === 'PAGA') {
+      totalPago += Number(item.valor || 0);
+      quantidadePagos += 1;
+    }
+
+    if (item.status === 'ABERTA') {
+      totalAberto += Number(item.valor || 0);
+      quantidadeEmAberto += 1;
+    }
+
+    if (item.status === 'ATRASADA') {
+      totalAtrasado += Number(item.valor || 0);
+      quantidadeAtrasados += 1;
+      if (!inadimplentesMap[item.memberId]) {
+        inadimplentesMap[item.memberId] = {
+          memberId: item.memberId,
+          memberNome: item.memberNome,
+          memberCpf: item.memberCpf,
+          total: 0
+        };
+      }
+      inadimplentesMap[item.memberId].total += Number(item.valor || 0);
+    }
+
+    if (item.status === 'CANCELADA') {
+      quantidadeCancelados += 1;
+    }
+  });
+
+  var inadimplentes = Object.keys(inadimplentesMap).map(function (key) {
+    return inadimplentesMap[key];
+  }).sort(function (a, b) {
+    return b.total - a.total;
+  });
+
+  return {
+    competencia: competencia,
+    totalLancado: round2_(totalLancado),
+    totalPago: round2_(totalPago),
+    totalAberto: round2_(totalAberto),
+    totalAtrasado: round2_(totalAtrasado),
+    quantidadePagos: quantidadePagos,
+    quantidadeEmAberto: quantidadeEmAberto,
+    quantidadeAtrasados: quantidadeAtrasados,
+    quantidadeCancelados: quantidadeCancelados,
+    inadimplentes: inadimplentes,
+    itens: items
+  };
+}
+
+function listDocuments_(payload) {
+  var rows = getSheetRows_(SIND_SHEETS.DOCUMENTS, DOCUMENT_HEADERS);
+  var items = rows.map(function (row, index) {
+    return rowToDocument_(row, index + 2);
+  }).filter(function (item) {
+    return item.id && item.numero;
+  });
+
+  var search = String((payload && payload.search) || '').trim().toLowerCase();
+  var tipo = String((payload && payload.tipo) || '').trim();
+  var ano = String((payload && payload.ano) || '').trim();
+
+  return items.filter(function (item) {
+    if (tipo && item.tipo !== tipo) {
+      return false;
+    }
+
+    if (ano && String(item.competencia || '').slice(0, 4) !== ano && String(item.createdAt || '').slice(0, 4) !== ano) {
+      return false;
+    }
+
+    if (!search) {
+      return true;
+    }
+
+    return [
+      item.numero,
+      item.tipo,
+      item.memberNome,
+      item.competencia,
+      item.descricao
+    ].join(' ').toLowerCase().indexOf(search) >= 0;
+  }).sort(function (a, b) {
+    return String(b.createdAt).localeCompare(String(a.createdAt));
+  });
+}
+
+function downloadDocument_(documentId) {
+  var doc = findDocumentById_(documentId);
+  if (!doc) {
+    throw new Error('Documento não encontrado.');
+  }
+
+  var file = DriveApp.getFileById(doc.driveFileId);
+  var blob = file.getBlob();
+  return {
+    documentId: doc.id,
+    numero: doc.numero,
+    tipo: doc.tipo,
+    fileName: file.getName(),
+    mimeType: blob.getContentType(),
+    base64Content: Utilities.base64Encode(blob.getBytes())
+  };
+}
+
+function listAuditLogs_(limit) {
+  var rows = getSheetRows_(SIND_SHEETS.AUDIT, AUDIT_HEADERS);
+  var max = Math.max(1, Math.min(Number(limit || 150), 500));
+  return rows.map(function (row) {
+    return {
+      timestamp: row[0] || '',
+      username: row[1] || '',
+      action: row[2] || '',
+      entity: row[3] || '',
+      entityId: row[4] || '',
+      details: row[5] || ''
+    };
+  }).reverse().slice(0, max);
+}
+
+function listUsers_() {
+  var rows = getSheetRows_(SIND_SHEETS.USERS, USER_HEADERS);
+  return rows.map(function (row, index) {
+    return rowToUser_(row, index + 2);
+  }).filter(function (item) {
+    return item.id && item.username;
+  }).sort(function (a, b) {
+    return a.nome.localeCompare(b.nome, 'pt-BR');
+  });
+}
+
+function saveUser_(payload, actorUsername) {
+  var data = normalizeUserPayload_(payload);
+  var lock = LockService.getScriptLock();
+  lock.waitLock(20000);
+
+  try {
+    var sheet = ensureSheet_(SIND_SHEETS.USERS, USER_HEADERS);
+    var users = listUsers_();
+    var duplicate = users.find(function (item) {
+      return item.username.toLowerCase() === data.username.toLowerCase() && item.id !== data.id;
+    });
+
+    if (duplicate) {
+      throw new Error('Já existe usuário com este login.');
+    }
+
+    var now = new Date().toISOString();
+
+    if (data.id) {
+      var existing = findUserById_(data.id);
+      if (!existing || !existing.rowNumber) {
+        throw new Error('Usuário não encontrado.');
+      }
+
+      var updated = {
+        id: existing.id,
+        nome: data.nome,
+        username: data.username,
+        passwordHash: data.password ? sha256_(data.password) : existing.passwordHash,
+        role: data.role,
+        status: data.status,
+        createdAt: existing.createdAt,
+        updatedAt: now
+      };
+
+      sheet.getRange(existing.rowNumber, 1, 1, USER_HEADERS.length).setValues([serializeUser_(updated)]);
+      seedAuditLog_('UPDATE', 'user', updated.id, updated.username + ' / ' + updated.role, actorUsername);
+      return sanitizeUser_(updated);
+    }
+
+    if (!data.password) {
+      throw new Error('Informe a senha inicial do usuário.');
+    }
+
+    var created = {
+      id: generateId_(),
+      nome: data.nome,
+      username: data.username,
+      passwordHash: sha256_(data.password),
+      role: data.role,
+      status: data.status,
+      createdAt: now,
+      updatedAt: now
+    };
+
+    sheet.appendRow(serializeUser_(created));
+    seedAuditLog_('CREATE', 'user', created.id, created.username + ' / ' + created.role, actorUsername);
+    return sanitizeUser_(created);
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function toggleUserStatus_(userId, actorUsername) {
+  var user = findUserById_(userId);
+  if (!user || !user.rowNumber) {
+    throw new Error('Usuário não encontrado.');
+  }
+
+  if (user.username === String(actorUsername || '').trim()) {
+    throw new Error('Você não pode inativar o próprio usuário.');
+  }
+
+  user.status = user.status === 'ATIVO' ? 'INATIVO' : 'ATIVO';
+  user.updatedAt = new Date().toISOString();
+
+  ensureSheet_(SIND_SHEETS.USERS, USER_HEADERS)
+    .getRange(user.rowNumber, 1, 1, USER_HEADERS.length)
+    .setValues([serializeUser_(user)]);
+
+  seedAuditLog_('STATUS', 'user', user.id, user.username + ' / ' + user.status, actorUsername);
+  return sanitizeUser_(user);
+}
+
+function changePassword_(session, payload) {
+  var currentPassword = String(payload.currentPassword || '');
+  var newPassword = String(payload.newPassword || '');
+  var confirmPassword = String(payload.confirmPassword || '');
+
+  if (!currentPassword || !newPassword || !confirmPassword) {
+    throw new Error('Preencha a senha atual, a nova senha e a confirmação.');
+  }
+
+  if (newPassword !== confirmPassword) {
+    throw new Error('A confirmação da senha não confere.');
+  }
+
+  if (newPassword.length < 6) {
+    throw new Error('A nova senha deve ter pelo menos 6 caracteres.');
+  }
+
+  var user = findUserById_(session.userId);
+  if (!user || !user.rowNumber) {
+    throw new Error('Usuário não encontrado.');
+  }
+
+  if (user.passwordHash !== sha256_(currentPassword)) {
+    throw new Error('Senha atual incorreta.');
+  }
+
+  user.passwordHash = sha256_(newPassword);
+  user.updatedAt = new Date().toISOString();
+
+  ensureSheet_(SIND_SHEETS.USERS, USER_HEADERS)
+    .getRange(user.rowNumber, 1, 1, USER_HEADERS.length)
+    .setValues([serializeUser_(user)]);
+
+  seedAuditLog_('PASSWORD_CHANGE', 'user', user.id, user.username, session.username);
+  return { ok: true };
+}
+
+function exportCsv_(payload, session) {
+  var type = String(payload.type || '').trim();
+  var fileName = '';
+  var rows = [];
+
+  if (type === 'members') {
+    requirePermission_(session, 'members.read');
+    fileName = 'sindicalizados.csv';
+    rows = [MEMBER_HEADERS].concat(listMembers_({}).map(serializeMember_));
+  } else if (type === 'dues') {
+    requirePermission_(session, 'dues.read');
+    fileName = 'mensalidades-' + String(payload.dueCompetencia || currentMonth_()) + '.csv';
+    rows = [DUE_HEADERS].concat(listDues_({
+      competencia: payload.dueCompetencia,
+      status: payload.dueStatus,
+      search: payload.dueSearch
+    }).map(serializeDue_));
+  } else if (type === 'documents') {
+    requirePermission_(session, 'documents.read');
+    fileName = 'documentos.csv';
+    rows = [DOCUMENT_HEADERS].concat(listDocuments_({
+      search: payload.documentSearch,
+      tipo: payload.documentType,
+      ano: payload.documentYear
+    }).map(serializeDocument_));
+  } else if (type === 'monthly_report') {
+    requirePermission_(session, 'reports.read');
+    var report = buildMonthlyReport_(String(payload.competencia || currentMonth_()));
+    fileName = 'relatorio-' + report.competencia + '.csv';
+    rows = [
+      ['competencia', report.competencia],
+      ['totalLancado', report.totalLancado],
+      ['totalPago', report.totalPago],
+      ['totalAberto', report.totalAberto],
+      ['totalAtrasado', report.totalAtrasado],
+      ['quantidadePagos', report.quantidadePagos],
+      ['quantidadeEmAberto', report.quantidadeEmAberto],
+      ['quantidadeAtrasados', report.quantidadeAtrasados],
+      [],
+      DUE_HEADERS
+    ].concat(report.itens.map(serializeDue_));
+  } else if (type === 'users') {
+    requirePermission_(session, 'users.manage');
+    fileName = 'usuarios.csv';
+    rows = [['id', 'nome', 'username', 'role', 'status', 'createdAt', 'updatedAt']].concat(listUsers_().map(function (item) {
+      return [
+        item.id,
+        item.nome,
+        item.username,
+        item.role,
+        item.status,
+        item.createdAt,
+        item.updatedAt
+      ];
+    }));
+  } else {
+    throw new Error('Tipo de exportação inválido.');
+  }
+
+  var csv = rows.map(function (row) {
+    return (row || []).map(csvEscape_).join(';');
+  }).join('\n');
+
+  return {
+    fileName: fileName,
+    mimeType: 'text/csv;charset=utf-8',
+    base64Content: Utilities.base64Encode(Utilities.newBlob('\ufeff' + csv, 'text/csv', fileName).getBytes())
+  };
+}
+
+function issueReceipt_(dueId, username) {
+  var due = findDueById_(dueId);
+  if (!due) {
+    throw new Error('Mensalidade não encontrada.');
+  }
+
+  if (resolveDueStatus_(due) !== 'PAGA') {
+    throw new Error('Recibo disponível apenas para mensalidade paga.');
+  }
+
+  var member = findMemberById_(due.memberId);
+  if (!member) {
+    throw new Error('Sindicalizado não encontrado.');
+  }
+
+  var existing = findDocumentByDueAndType_(due.id, DOCUMENT_TYPES.RECEIPT);
+  if (existing) {
+    return downloadDocument_(existing.id);
+  }
+
+  var numero = nextDocumentNumber_('REC');
+  var docTitle = numero + ' - ' + member.nome;
+  var lines = [
+    getUnionName_(),
+    'RECIBO DE MENSALIDADE SINDICAL',
+    '',
+    'Recibo nº: ' + numero,
+    'Emitido em: ' + formatDateTimeBr_(new Date()),
+    '',
+    'Recebemos de: ' + member.nome,
+    'CPF: ' + formatCpf_(member.cpf),
+    'Empresa: ' + (member.empresa || '-'),
+    '',
+    'Competência: ' + formatCompetenciaBr_(due.competencia),
+    'Valor pago: ' + formatCurrencyBr_(due.valor),
+    'Data do pagamento: ' + formatDateBr_(due.pagoEm),
+    'Forma de pagamento: ' + (due.formaPagamento || '-'),
+    '',
+    'Declaramos, para os devidos fins, que o valor acima foi recebido a título de mensalidade sindical.',
+    '',
+    'Assinatura eletrônica:',
+    getUnionName_()
+  ];
+
+  var pdfFile = createPdfFile_(docTitle, lines);
+  var record = saveDocumentRecord_({
+    tipo: DOCUMENT_TYPES.RECEIPT,
+    numero: numero,
+    memberId: member.id,
+    memberNome: member.nome,
+    dueId: due.id,
+    competencia: due.competencia,
+    descricao: 'Recibo da mensalidade ' + due.competencia + ' - ' + member.nome,
+    driveFileId: pdfFile.getId(),
+    driveFileName: pdfFile.getName(),
+    mimeType: pdfFile.getMimeType(),
+    createdBy: username
+  }, username);
+
+  return documentResponse_(record, pdfFile);
+}
+
+function issueMemberDeclaration_(memberId, username) {
+  var member = findMemberById_(memberId);
+  if (!member) {
+    throw new Error('Sindicalizado não encontrado.');
+  }
+
+  var numero = nextDocumentNumber_('DEC');
+  var docTitle = numero + ' - ' + member.nome;
+  var lines = [
+    getUnionName_(),
+    'DECLARAÇÃO DE FILIAÇÃO',
+    '',
+    'Declara-se, para os devidos fins, que ' + member.nome + ', CPF ' + formatCpf_(member.cpf) + ',',
+    'encontra-se cadastrado(a) neste sindicato com status atual "' + member.status + '".',
+    '',
+    'Empresa: ' + (member.empresa || '-'),
+    'Cargo: ' + (member.cargo || '-'),
+    'Data de filiação: ' + formatDateBr_(member.dataFiliacao),
+    '',
+    'Além Paraíba - MG, ' + formatDateExtensoBr_(new Date()),
+    '',
+    'Assinatura eletrônica:',
+    getUnionName_()
+  ];
+
+  var pdfFile = createPdfFile_(docTitle, lines);
+  var record = saveDocumentRecord_({
+    tipo: DOCUMENT_TYPES.AFFILIATION,
+    numero: numero,
+    memberId: member.id,
+    memberNome: member.nome,
+    dueId: '',
+    competencia: '',
+    descricao: 'Declaração de filiação - ' + member.nome,
+    driveFileId: pdfFile.getId(),
+    driveFileName: pdfFile.getName(),
+    mimeType: pdfFile.getMimeType(),
+    createdBy: username
+  }, username);
+
+  return documentResponse_(record, pdfFile);
+}
+
+function issueMemberFicha_(memberId, username) {
+  var member = findMemberById_(memberId);
+  if (!member) {
+    throw new Error('Sindicalizado não encontrado.');
+  }
+
+  var numero = nextDocumentNumber_('FIC');
+  var docTitle = numero + ' - ' + member.nome;
+  var lines = [
+    getUnionName_(),
+    'FICHA CADASTRAL DO SINDICALIZADO',
+    '',
+    'Número do documento: ' + numero,
+    'Emitido em: ' + formatDateTimeBr_(new Date()),
+    '',
+    'Nome: ' + member.nome,
+    'CPF: ' + formatCpf_(member.cpf),
+    'RG: ' + (member.rg || '-'),
+    'Data de nascimento: ' + formatDateBr_(member.dataNascimento),
+    'E-mail: ' + (member.email || '-'),
+    'Telefone: ' + formatPhoneBr_(member.telefone),
+    '',
+    'Endereço: ' + (member.endereco || '-'),
+    'Bairro: ' + (member.bairro || '-'),
+    'Cidade/UF: ' + (member.cidade || '-') + '/' + (member.uf || '-'),
+    'CEP: ' + formatCepBr_(member.cep),
+    '',
+    'Empresa: ' + (member.empresa || '-'),
+    'Cargo: ' + (member.cargo || '-'),
+    'Data de admissão: ' + formatDateBr_(member.dataAdmissao),
+    'Data de filiação: ' + formatDateBr_(member.dataFiliacao),
+    'Status atual: ' + (member.status || '-'),
+    '',
+    'Observações: ' + (member.observacoes || '-'),
+    '',
+    'Assinatura eletrônica:',
+    getUnionName_()
+  ];
+
+  var pdfFile = createPdfFile_(docTitle, lines);
+  var record = saveDocumentRecord_({
+    tipo: DOCUMENT_TYPES.MEMBER_FORM,
+    numero: numero,
+    memberId: member.id,
+    memberNome: member.nome,
+    dueId: '',
+    competencia: '',
+    descricao: 'Ficha cadastral - ' + member.nome,
+    driveFileId: pdfFile.getId(),
+    driveFileName: pdfFile.getName(),
+    mimeType: pdfFile.getMimeType(),
+    createdBy: username
+  }, username);
+
+  return documentResponse_(record, pdfFile);
+}
+
+function issueAnnualClearance_(memberId, ano, username) {
+  var member = findMemberById_(memberId);
+  if (!member) {
+    throw new Error('Sindicalizado não encontrado.');
+  }
+
+  ano = String(ano || '').trim();
+  if (!/^\d{4}$/.test(ano)) {
+    throw new Error('Informe um ano válido com 4 dígitos.');
+  }
+
+  var existing = findDocumentByMemberAndTypeAndCompetencia_(memberId, DOCUMENT_TYPES.ANNUAL_CLEARANCE, ano);
+  if (existing) {
+    return downloadDocument_(existing.id);
+  }
+
+  var dues = listDues_({ memberId: memberId }).filter(function (item) {
+    return String(item.competencia || '').slice(0, 4) === ano;
+  });
+
+  if (!dues.length) {
+    throw new Error('Não há mensalidades lançadas para este sindicalizado no ano informado.');
+  }
+
+  var pending = dues.filter(function (item) {
+    return resolveDueStatus_(item) !== 'PAGA';
+  });
+
+  if (pending.length) {
+    throw new Error('Existe(m) ' + pending.length + ' mensalidade(s) pendente(s) ou em atraso neste ano.');
+  }
+
+  var total = dues.reduce(function (sum, item) {
+    return sum + Number(item.valor || 0);
+  }, 0);
+
+  var numero = nextDocumentNumber_('QUIT');
+  var docTitle = numero + ' - ' + member.nome + ' - ' + ano;
+  var lines = [
+    getUnionName_(),
+    'DECLARAÇÃO DE QUITAÇÃO ANUAL',
+    '',
+    'Declara-se, para os devidos fins, que ' + member.nome + ', CPF ' + formatCpf_(member.cpf) + ',',
+    'encontra-se quite com as mensalidades sindicais referentes ao exercício de ' + ano + '.',
+    '',
+    'Quantidade de mensalidades quitadas: ' + dues.length,
+    'Valor total quitado no ano: ' + formatCurrencyBr_(total),
+    'Empresa: ' + (member.empresa || '-'),
+    '',
+    'Além Paraíba - MG, ' + formatDateExtensoBr_(new Date()),
+    '',
+    'Assinatura eletrônica:',
+    getUnionName_()
+  ];
+
+  var pdfFile = createPdfFile_(docTitle, lines);
+  var record = saveDocumentRecord_({
+    tipo: DOCUMENT_TYPES.ANNUAL_CLEARANCE,
+    numero: numero,
+    memberId: member.id,
+    memberNome: member.nome,
+    dueId: '',
+    competencia: ano,
+    descricao: 'Declaração de quitação anual ' + ano + ' - ' + member.nome,
+    driveFileId: pdfFile.getId(),
+    driveFileName: pdfFile.getName(),
+    mimeType: pdfFile.getMimeType(),
+    createdBy: username
+  }, username);
+
+  return documentResponse_(record, pdfFile);
+}
+
+function createPdfFile_(title, lines) {
+  var folder = getPdfFolder_();
+  var doc = DocumentApp.create(title);
+  var body = doc.getBody();
+  var unionName = getUnionName_();
+  var i;
+
+  body.setMarginTop(50).setMarginBottom(50).setMarginLeft(50).setMarginRight(50);
+
+  for (i = 0; i < lines.length; i += 1) {
+    var line = String(lines[i] || '');
+    var paragraph = body.appendParagraph(line);
+    paragraph.setFontFamily('Arial').setFontSize(12);
+
+    if (i === 0) {
+      paragraph.setHeading(DocumentApp.ParagraphHeading.HEADING1);
+      paragraph.setBold(true);
+      paragraph.setAlignment(DocumentApp.HorizontalAlignment.CENTER);
+    } else if (
+      line === 'RECIBO DE MENSALIDADE SINDICAL' ||
+      line === 'DECLARAÇÃO DE FILIAÇÃO' ||
+      line === 'FICHA CADASTRAL DO SINDICALIZADO' ||
+      line === 'DECLARAÇÃO DE QUITAÇÃO ANUAL'
+    ) {
+      paragraph.setHeading(DocumentApp.ParagraphHeading.HEADING2);
+      paragraph.setBold(true);
+      paragraph.setAlignment(DocumentApp.HorizontalAlignment.CENTER);
+    } else if (line === '') {
+      paragraph.setSpacingAfter(10);
+    }
+  }
+
+  body.appendParagraph('');
+  body.appendParagraph('Documento emitido eletronicamente por ' + unionName + '.')
+    .setFontSize(10)
+    .setForegroundColor('#666666');
+
+  doc.saveAndClose();
+
+  var docFile = DriveApp.getFileById(doc.getId());
+  var pdfBlob = docFile.getAs(MimeType.PDF).setName(title + '.pdf');
+  var pdfFile = folder.createFile(pdfBlob);
+  docFile.setTrashed(true);
+
+  return pdfFile;
+}
+
+function saveDocumentRecord_(data, username) {
+  var lock = LockService.getScriptLock();
+  lock.waitLock(20000);
+
+  try {
+    var now = new Date().toISOString();
+    var document = {
+      id: generateId_(),
+      tipo: data.tipo,
+      numero: data.numero,
+      memberId: data.memberId || '',
+      memberNome: data.memberNome || '',
+      dueId: data.dueId || '',
+      competencia: data.competencia || '',
+      descricao: data.descricao || '',
+      driveFileId: data.driveFileId || '',
+      driveFileName: data.driveFileName || '',
+      mimeType: data.mimeType || 'application/pdf',
+      createdBy: data.createdBy || username || '',
+      createdAt: now
+    };
+
+    ensureSheet_(SIND_SHEETS.DOCUMENTS, DOCUMENT_HEADERS).appendRow(serializeDocument_(document));
+    seedAuditLog_('DOCUMENT', 'document', document.id, document.numero + ' / ' + document.tipo, username);
+    return document;
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function documentResponse_(record, file) {
+  var blob = file.getBlob();
+  return {
+    documentId: record.id,
+    numero: record.numero,
+    tipo: record.tipo,
+    fileName: file.getName(),
+    mimeType: blob.getContentType(),
+    driveFileId: file.getId(),
+    base64Content: Utilities.base64Encode(blob.getBytes())
+  };
+}
+
+function nextDocumentNumber_(prefix) {
+  var rows = getSheetRows_(SIND_SHEETS.DOCUMENTS, DOCUMENT_HEADERS);
+  var year = new Date().getFullYear();
+  var sequence = rows.filter(function (row) {
+    var numero = String(row[2] || '');
+    return numero.indexOf(prefix + '-' + year + '-') === 0;
+  }).length + 1;
+
+  return prefix + '-' + year + '-' + ('0000' + sequence).slice(-4);
+}
+
+function seedAuditLog_(action, entity, entityId, details, username) {
+  ensureSheet_(SIND_SHEETS.AUDIT, AUDIT_HEADERS).appendRow([
+    new Date().toISOString(),
+    username || 'system',
+    action || '',
+    entity || '',
+    entityId || '',
+    details || ''
+  ]);
+}
+
+function getSheetRows_(sheetName, headers) {
+  var sheet = ensureSheet_(sheetName, headers);
+  var lastRow = sheet.getLastRow();
+  if (lastRow <= 1) {
+    return [];
+  }
+  return sheet.getRange(2, 1, lastRow - 1, headers.length).getDisplayValues();
+}
+
+function findMemberById_(memberId) {
+  var rows = getSheetRows_(SIND_SHEETS.MEMBERS, MEMBER_HEADERS);
+  var found = null;
+
+  rows.forEach(function (row, index) {
+    var item = rowToMember_(row, index + 2);
+    if (item.id === memberId) {
+      found = item;
+    }
+  });
+
+  return found;
+}
+
+function findDueById_(dueId) {
+  var rows = getSheetRows_(SIND_SHEETS.DUES, DUE_HEADERS);
+  var found = null;
+
+  rows.forEach(function (row, index) {
+    var item = rowToDue_(row, index + 2);
+    if (item.id === dueId) {
+      item.status = resolveDueStatus_(item);
+      found = item;
+    }
+  });
+
+  return found;
+}
+
+function findDocumentById_(documentId) {
+  var rows = getSheetRows_(SIND_SHEETS.DOCUMENTS, DOCUMENT_HEADERS);
+  var found = null;
+
+  rows.forEach(function (row, index) {
+    var item = rowToDocument_(row, index + 2);
+    if (item.id === documentId) {
+      found = item;
+    }
+  });
+
+  return found;
+}
+
+function findDocumentByDueAndType_(dueId, type) {
+  var rows = getSheetRows_(SIND_SHEETS.DOCUMENTS, DOCUMENT_HEADERS);
+  var found = null;
+
+  rows.forEach(function (row, index) {
+    var item = rowToDocument_(row, index + 2);
+    if (item.dueId === dueId && item.tipo === type) {
+      found = item;
+    }
+  });
+
+  return found;
+}
+
+function findDocumentByMemberAndTypeAndCompetencia_(memberId, type, competencia) {
+  var rows = getSheetRows_(SIND_SHEETS.DOCUMENTS, DOCUMENT_HEADERS);
+  var found = null;
+
+  rows.forEach(function (row, index) {
+    var item = rowToDocument_(row, index + 2);
+    if (item.memberId === memberId && item.tipo === type && String(item.competencia || '') === String(competencia || '')) {
+      found = item;
+    }
+  });
+
+  return found;
+}
+
+function findUserById_(userId) {
+  var rows = getSheetRows_(SIND_SHEETS.USERS, USER_HEADERS);
+  var found = null;
+
+  rows.forEach(function (row, index) {
+    var item = rowToUser_(row, index + 2);
+    if (item.id === userId) {
+      found = item;
+    }
+  });
+
+  return found;
+}
+
+function findUserByUsername_(username) {
+  username = String(username || '').trim().toLowerCase();
+  var rows = getSheetRows_(SIND_SHEETS.USERS, USER_HEADERS);
+  var found = null;
+
+  rows.forEach(function (row, index) {
+    var item = rowToUser_(row, index + 2);
+    if (String(item.username || '').trim().toLowerCase() === username) {
+      found = item;
+    }
+  });
+
+  return found;
+}
+
+function rowToMember_(row, rowNumber) {
+  row = normalizeRow_(row, MEMBER_HEADERS.length);
+  return {
+    id: row[0] || '',
+    nome: row[1] || '',
+    cpf: row[2] || '',
+    rg: row[3] || '',
+    dataNascimento: row[4] || '',
+    email: row[5] || '',
+    telefone: row[6] || '',
+    endereco: row[7] || '',
+    bairro: row[8] || '',
+    cidade: row[9] || '',
+    uf: row[10] || 'MG',
+    cep: row[11] || '',
+    empresa: row[12] || '',
+    cargo: row[13] || '',
+    dataAdmissao: row[14] || '',
+    dataFiliacao: row[15] || '',
+    status: row[16] || 'ATIVO',
+    observacoes: row[17] || '',
+    createdAt: row[18] || '',
+    updatedAt: row[19] || '',
+    rowNumber: rowNumber
+  };
+}
+
+function rowToDue_(row, rowNumber) {
+  row = normalizeRow_(row, DUE_HEADERS.length);
+  return {
+    id: row[0] || '',
+    memberId: row[1] || '',
+    memberNome: row[2] || '',
+    memberCpf: row[3] || '',
+    competencia: row[4] || '',
+    valor: parseNumber_(row[5] || 0),
+    vencimento: row[6] || '',
+    pagoEm: row[7] || '',
+    formaPagamento: row[8] || '',
+    status: row[9] || 'ABERTA',
+    observacoes: row[10] || '',
+    createdAt: row[11] || '',
+    updatedAt: row[12] || '',
+    rowNumber: rowNumber
+  };
+}
+
+function rowToDocument_(row, rowNumber) {
+  row = normalizeRow_(row, DOCUMENT_HEADERS.length);
+  return {
+    id: row[0] || '',
+    tipo: row[1] || '',
+    numero: row[2] || '',
+    memberId: row[3] || '',
+    memberNome: row[4] || '',
+    dueId: row[5] || '',
+    competencia: row[6] || '',
+    descricao: row[7] || '',
+    driveFileId: row[8] || '',
+    driveFileName: row[9] || '',
+    mimeType: row[10] || 'application/pdf',
+    createdBy: row[11] || '',
+    createdAt: row[12] || '',
+    rowNumber: rowNumber
+  };
+}
+
+function rowToUser_(row, rowNumber) {
+  row = normalizeRow_(row, USER_HEADERS.length);
+  return {
+    id: row[0] || '',
+    nome: row[1] || '',
+    username: row[2] || '',
+    passwordHash: row[3] || '',
+    role: row[4] || SIND_ROLES.CONSULTA,
+    status: row[5] || 'ATIVO',
+    createdAt: row[6] || '',
+    updatedAt: row[7] || '',
+    rowNumber: rowNumber
+  };
+}
+
+function sanitizeUser_(user) {
+  return {
+    id: user.id,
+    nome: user.nome,
+    username: user.username,
+    role: user.role,
+    status: user.status,
+    createdAt: user.createdAt,
+    updatedAt: user.updatedAt,
+    rowNumber: user.rowNumber
+  };
+}
+
+function serializeMember_(member) {
+  return [
+    member.id || '',
+    member.nome || '',
+    member.cpf || '',
+    member.rg || '',
+    member.dataNascimento || '',
+    member.email || '',
+    member.telefone || '',
+    member.endereco || '',
+    member.bairro || '',
+    member.cidade || '',
+    member.uf || '',
+    member.cep || '',
+    member.empresa || '',
+    member.cargo || '',
+    member.dataAdmissao || '',
+    member.dataFiliacao || '',
+    member.status || '',
+    member.observacoes || '',
+    member.createdAt || '',
+    member.updatedAt || ''
+  ];
+}
+
+function serializeDue_(due) {
+  return [
+    due.id || '',
+    due.memberId || '',
+    due.memberNome || '',
+    due.memberCpf || '',
+    due.competencia || '',
+    round2_(Number(due.valor || 0)),
+    due.vencimento || '',
+    due.pagoEm || '',
+    due.formaPagamento || '',
+    due.status || '',
+    due.observacoes || '',
+    due.createdAt || '',
+    due.updatedAt || ''
+  ];
+}
+
+function serializeDocument_(document) {
+  return [
+    document.id || '',
+    document.tipo || '',
+    document.numero || '',
+    document.memberId || '',
+    document.memberNome || '',
+    document.dueId || '',
+    document.competencia || '',
+    document.descricao || '',
+    document.driveFileId || '',
+    document.driveFileName || '',
+    document.mimeType || 'application/pdf',
+    document.createdBy || '',
+    document.createdAt || ''
+  ];
+}
+
+function serializeUser_(user) {
+  return [
+    user.id || '',
+    user.nome || '',
+    user.username || '',
+    user.passwordHash || '',
+    user.role || SIND_ROLES.CONSULTA,
+    user.status || 'ATIVO',
+    user.createdAt || '',
+    user.updatedAt || ''
+  ];
+}
+
+function normalizeMemberPayload_(payload) {
+  var data = {
+    id: String(payload.id || '').trim(),
+    nome: String(payload.nome || '').trim(),
+    cpf: digitsOnly_(payload.cpf || ''),
+    rg: String(payload.rg || '').trim(),
+    dataNascimento: String(payload.dataNascimento || '').trim(),
+    email: String(payload.email || '').trim(),
+    telefone: digitsOnly_(payload.telefone || ''),
+    endereco: String(payload.endereco || '').trim(),
+    bairro: String(payload.bairro || '').trim(),
+    cidade: String(payload.cidade || 'Além Paraíba').trim(),
+    uf: String(payload.uf || 'MG').trim().toUpperCase(),
+    cep: digitsOnly_(payload.cep || ''),
+    empresa: String(payload.empresa || '').trim(),
+    cargo: String(payload.cargo || '').trim(),
+    dataAdmissao: String(payload.dataAdmissao || '').trim(),
+    dataFiliacao: String(payload.dataFiliacao || '').trim(),
+    status: String(payload.status || 'ATIVO').trim(),
+    observacoes: String(payload.observacoes || '').trim()
+  };
+
+  if (!data.nome || data.nome.length < 3) {
+    throw new Error('Informe o nome completo.');
+  }
+
+  validateCpf_(data.cpf);
+
+  if (data.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
+    throw new Error('E-mail inválido.');
+  }
+
+  if (data.dataNascimento) validateDateInput_(data.dataNascimento);
+  if (data.dataAdmissao) validateDateInput_(data.dataAdmissao);
+  if (data.dataFiliacao) validateDateInput_(data.dataFiliacao);
+
+  if (!/^[A-Z]{2}$/.test(data.uf)) {
+    throw new Error('UF inválida.');
+  }
+
+  if (['ATIVO', 'PENDENTE', 'INATIVO'].indexOf(data.status) < 0) {
+    throw new Error('Status inválido.');
+  }
+
+  return data;
+}
+
+function normalizeUserPayload_(payload) {
+  var data = {
+    id: String(payload.id || '').trim(),
+    nome: String(payload.nome || '').trim(),
+    username: String(payload.username || '').trim(),
+    password: String(payload.password || ''),
+    role: String(payload.role || SIND_ROLES.CONSULTA).trim(),
+    status: String(payload.status || 'ATIVO').trim()
+  };
+
+  if (!data.nome || data.nome.length < 3) {
+    throw new Error('Informe o nome do usuário.');
+  }
+
+  if (!/^[a-zA-Z0-9._-]{3,30}$/.test(data.username)) {
+    throw new Error('Login inválido. Use 3 a 30 caracteres sem espaços.');
+  }
+
+  if (Object.keys(PERMISSION_GROUPS).indexOf(data.role) < 0) {
+    throw new Error('Perfil inválido.');
+  }
+
+  if (['ATIVO', 'INATIVO'].indexOf(data.status) < 0) {
+    throw new Error('Status do usuário inválido.');
+  }
+
+  if (data.password && data.password.length < 6) {
+    throw new Error('A senha deve ter pelo menos 6 caracteres.');
+  }
+
+  return data;
+}
+
+function resolveDueStatus_(due) {
+  if (String(due.status || '') === 'CANCELADA') {
+    return 'CANCELADA';
+  }
+
+  if (String(due.pagoEm || '').trim()) {
+    return 'PAGA';
+  }
+
+  var dueDate = new Date(String(due.vencimento || '') + 'T23:59:59');
+  if (!isNaN(dueDate.getTime()) && dueDate.getTime() < new Date().getTime()) {
+    return 'ATRASADA';
+  }
+
+  return 'ABERTA';
+}
+
+function validateCpf_(value) {
+  var cpf = digitsOnly_(value);
+  var sum = 0;
+  var remainder;
+  var i;
+
+  if (cpf.length !== 11 || /^(\d)\1{10}$/.test(cpf)) {
+    throw new Error('CPF inválido.');
+  }
+
+  for (i = 1; i <= 9; i += 1) {
+    sum += Number(cpf.substring(i - 1, i)) * (11 - i);
+  }
+
+  remainder = (sum * 10) % 11;
+  if (remainder === 10 || remainder === 11) remainder = 0;
+  if (remainder !== Number(cpf.substring(9, 10))) {
+    throw new Error('CPF inválido.');
+  }
+
+  sum = 0;
+  for (i = 1; i <= 10; i += 1) {
+    sum += Number(cpf.substring(i - 1, i)) * (12 - i);
+  }
+
+  remainder = (sum * 10) % 11;
+  if (remainder === 10 || remainder === 11) remainder = 0;
+  if (remainder !== Number(cpf.substring(10, 11))) {
+    throw new Error('CPF inválido.');
+  }
+}
+
+function validateCompetencia_(value) {
+  if (!/^\d{4}-\d{2}$/.test(String(value || '').trim())) {
+    throw new Error('Competência inválida. Use YYYY-MM.');
+  }
+}
+
+function validateDateInput_(value) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(String(value || '').trim())) {
+    throw new Error('Data inválida. Use YYYY-MM-DD.');
+  }
+}
+
+function normalizeAction_(value) {
+  return String(value || '').trim().toLowerCase();
+}
+
+function parseJsonBody_(e) {
+  var text = String((e && e.postData && e.postData.contents) || '{}').trim();
+  if (!text) {
+    return {};
+  }
+
+  try {
+    return JSON.parse(text);
+  } catch (error) {
+    throw new Error('JSON inválido.');
+  }
+}
+
+function handleError_(error) {
+  return jsonResponse_(false, error && error.message ? error.message : 'Erro interno.');
+}
+
+function jsonResponse_(ok, message, data) {
+  return ContentService
+    .createTextOutput(JSON.stringify({
+      ok: !!ok,
+      message: message || '',
+      data: data || {}
+    }))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+function generateId_() {
+  return Utilities.getUuid();
+}
+
+function sha256_(text) {
+  var bytes = Utilities.computeDigest(
+    Utilities.DigestAlgorithm.SHA_256,
+    String(text || ''),
+    Utilities.Charset.UTF_8
+  );
+
+  return bytes.map(function (b) {
+    var v = (b < 0 ? b + 256 : b).toString(16);
+    return v.length === 1 ? '0' + v : v;
+  }).join('');
+}
+
+function normalizeRow_(row, size) {
+  var result = (row || []).slice();
+  while (result.length < size) {
+    result.push('');
+  }
+  return result;
+}
+
+function digitsOnly_(value) {
+  return String(value || '').replace(/\D/g, '');
+}
+
+function parseNumber_(value) {
+  var normalized = String(value == null ? '' : value)
+    .replace(/\./g, '')
+    .replace(',', '.')
+    .replace(/[^\d.-]/g, '');
+
+  var parsed = Number(normalized);
+  return isNaN(parsed) ? 0 : parsed;
+}
+
+function round2_(value) {
+  return Math.round(Number(value || 0) * 100) / 100;
+}
+
+function csvEscape_(value) {
+  var text = String(value == null ? '' : value);
+  if (/[;"\n]/.test(text)) {
+    return '"' + text.replace(/"/g, '""') + '"';
+  }
+  return text;
+}
+
+function formatCurrencyBr_(value) {
+  return 'R$ ' + Number(value || 0).toFixed(2).replace('.', ',');
+}
+
+function formatDateBr_(value) {
+  if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(String(value))) {
+    return value || '-';
+  }
+  return String(value).slice(8, 10) + '/' + String(value).slice(5, 7) + '/' + String(value).slice(0, 4);
+}
+
+function formatDateTimeBr_(value) {
+  var date = value instanceof Date ? value : new Date(value);
+  if (isNaN(date.getTime())) {
+    return String(value || '-');
+  }
+  return Utilities.formatDate(date, Session.getScriptTimeZone(), 'dd/MM/yyyy HH:mm:ss');
+}
+
+function formatCompetenciaBr_(value) {
+  if (!value || !/^\d{4}-\d{2}$/.test(String(value))) {
+    return value || '-';
+  }
+  return String(value).slice(5, 7) + '/' + String(value).slice(0, 4);
+}
+
+function formatCpf_(value) {
+  var cpf = digitsOnly_(value);
+  if (cpf.length !== 11) return value || '-';
+  return cpf.replace(/^(\d{3})(\d{3})(\d{3})(\d{2})$/, '$1.$2.$3-$4');
+}
+
+function formatPhoneBr_(value) {
+  var phone = digitsOnly_(value);
+  if (phone.length === 11) {
+    return phone.replace(/^(\d{2})(\d{5})(\d{4})$/, '($1) $2-$3');
+  }
+  if (phone.length === 10) {
+    return phone.replace(/^(\d{2})(\d{4})(\d{4})$/, '($1) $2-$3');
+  }
+  return value || '-';
+}
+
+function formatCepBr_(value) {
+  var cep = digitsOnly_(value);
+  if (cep.length !== 8) return value || '-';
+  return cep.replace(/^(\d{5})(\d{3})$/, '$1-$2');
+}
+
+function formatDateExtensoBr_(date) {
+  var months = [
+    'janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho',
+    'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'
+  ];
+  var d = date instanceof Date ? date : new Date(date);
+  if (isNaN(d.getTime())) {
+    return '-';
+  }
+  return d.getDate() + ' de ' + months[d.getMonth()] + ' de ' + d.getFullYear();
+}
+
+function currentMonth_() {
+  return Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM');
+}
+
+function currentDateStr_() {
+  return Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd');
+}
+
+function getScriptProperty_(name, fallback) {
+  var value = PropertiesService.getScriptProperties().getProperty(name);
+  return value == null || value === '' ? fallback : value;
+}
