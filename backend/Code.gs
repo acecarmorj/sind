@@ -509,6 +509,45 @@ function seedDefaultAdminUser_() {
   ]);
 }
 
+function resetAdminPassword_() {
+  var props = PropertiesService.getScriptProperties();
+  var spreadsheetId = String(SIND_SETUP.SPREADSHEET_ID || '').trim();
+  var username = String(SIND_SETUP.ADMIN_USERNAME || 'admin').trim();
+  var now = new Date().toISOString();
+  var sheet;
+  var existing;
+  var user;
+
+  if (spreadsheetId) {
+    props.setProperty(SIND_SECURITY.PROP_SPREADSHEET_ID, spreadsheetId);
+  }
+
+  props.setProperty(SIND_SECURITY.PROP_UNION_NAME, String(SIND_SETUP.UNION_NAME || 'Sindicato').trim());
+
+  ensureAllSheets_();
+  sheet = ensureSheet_(SIND_SHEETS.USERS, USER_HEADERS);
+  existing = findUserByUsername_(username);
+  user = {
+    id: existing && existing.id ? existing.id : generateId_(),
+    nome: existing && existing.nome ? existing.nome : String(SIND_SETUP.ADMIN_NAME || 'Administrador'),
+    username: username,
+    passwordHash: sha256_(String(SIND_SETUP.ADMIN_PASSWORD || '123456')),
+    role: SIND_ROLES.ADMIN,
+    status: 'ATIVO',
+    createdAt: existing && existing.createdAt ? existing.createdAt : now,
+    updatedAt: now
+  };
+
+  if (existing && existing.rowNumber) {
+    sheet.getRange(existing.rowNumber, 1, 1, USER_HEADERS.length).setValues([serializeUser_(user)]);
+  } else {
+    sheet.appendRow(serializeUser_(user));
+  }
+
+  seedAuditLog_('RESET_ADMIN', 'user', user.id, 'Usuário administrador resetado', 'system');
+  return 'Admin resetado: ' + username + ' / senha inicial configurada.';
+}
+
 function listMembers_(payload) {
   var rows = getSheetRows_(SIND_SHEETS.MEMBERS, MEMBER_HEADERS);
   var items = rows.map(function (row, index) {
