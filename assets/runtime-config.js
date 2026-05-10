@@ -6,6 +6,6 @@
   window.SIND_RUNTIME_CONFIG = Object.assign({}, window.SIND_RUNTIME_CONFIG || {}, {
     BUILD_VERSION: '2026-05-07-apps-script-v3',
     API_URL: API_URL,
-    UNION_NAME_FALLBACK: 'Sindicato do Comércio de Além Paraíba - MG'
+    UNION_NAME_FALLBACK: 'ACEAP - Associação Comercial e Empresarial de Além Paraíba'
   });
 }());

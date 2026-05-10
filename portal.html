@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ACEAP | Portal do Associado</title>
+  <meta name="theme-color" content="#2f6f46" />
+  <link rel="stylesheet" href="./assets/styles.css" />
+</head>
+<body class="portal-body">
+  <div id="portalLoginScreen" class="screen-screen portal-login-screen">
+    <div class="card login-card portal-login-card">
+      <img class="login-logo" src="./assets/aceap-logo.png" alt="ACEAP" />
+      <div class="brand-badge">ACEAP • portal do associado</div>
+      <h1>Portal do Associado</h1>
+      <p class="muted">Acesse sua área para consultar cadastro, mensalidades, recibos, documentos e carteirinha digital.</p>
+
+      <form id="portalLoginForm" class="grid portal-login-form">
+        <label>
+          CPF/CNPJ
+          <input id="portalDocument" inputmode="numeric" autocomplete="username" placeholder="Digite seu CPF ou CNPJ" />
+        </label>
+
+        <label>
+          Senha
+          <input id="portalPassword" type="password" autocomplete="current-password" placeholder="Digite sua senha" />
+        </label>
+
+        <button id="portalLoginSubmit" class="btn btn-primary" type="submit">Entrar no portal</button>
+        <p id="portalLoginMessage" class="message"></p>
+      </form>
+    </div>
+  </div>
+
+  <div id="portalAppScreen" class="hidden">
+    <header class="topbar portal-topbar">
+      <div class="brand-lockup">
+        <div class="brand-mark"><img src="./assets/aceap-logo.png" alt="ACEAP" /></div>
+        <div>
+          <h1>ACEAP | Portal do Associado</h1>
+          <p id="portalMemberNameTop" class="muted">Área exclusiva do associado</p>
+        </div>
+      </div>
+
+      <div class="session-panel portal-session-panel">
+        <p class="muted small">Acesso seguro do associado</p>
+        <div class="actions system-actions">
+          <button id="portalLogoutBtn" class="btn btn-outline" type="button">Sair</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="page portal-page">
+      <section class="overview-strip portal-hero">
+        <div class="overview-copy">
+          <h2 id="portalWelcomeTitle">Olá, associado</h2>
+          <p id="portalWelcomeText">Consulte sua situação, documentos e informações principais em um só lugar.</p>
+        </div>
+        <div class="overview-note">
+          <strong>Situação cadastral</strong>
+          <span id="portalStatusBadge" class="portal-status-badge">Ativo</span>
+          <p class="muted small">Informações disponíveis para consulta do associado.</p>
+        </div>
+      </section>
+
+      <section class="stats-privacy-card portal-summary-card">
+        <div class="stats-privacy-head">
+          <div>
+            <h2>Resumo do associado</h2>
+            <p class="muted">Visão rápida dos principais dados.</p>
+          </div>
+        </div>
+
+        <div class="stats-grid portal-stats-grid">
+          <article class="stat-card">
+            <span class="stat-label">Mensalidades em aberto</span>
+            <strong id="portalOpenDues" class="stat-value">0</strong>
+          </article>
+
+          <article class="stat-card">
+            <span class="stat-label">Próximo vencimento</span>
+            <strong id="portalNextDue" class="stat-value">10/06/2026</strong>
+          </article>
+
+          <article class="stat-card">
+            <span class="stat-label">Último recibo</span>
+            <strong id="portalLastReceipt" class="stat-value">Mai/2026</strong>
+          </article>
+
+          <article class="stat-card">
+            <span class="stat-label">Carteirinha</span>
+            <strong id="portalCardStatus" class="stat-value">Ativa</strong>
+          </article>
+        </div>
+      </section>
+
+      <nav class="tabs desktop-tabs portal-tabs" aria-label="Navegação do portal">
+        <button class="tab-btn active" type="button" data-portal-tab="inicio">Início</button>
+        <button class="tab-btn" type="button" data-portal-tab="empresa">Minha empresa</button>
+        <button class="tab-btn" type="button" data-portal-tab="mensalidades">Mensalidades</button>
+        <button class="tab-btn" type="button" data-portal-tab="recibos">Recibos</button>
+        <button class="tab-btn" type="button" data-portal-tab="documentos">Documentos</button>
+        <button class="tab-btn" type="button" data-portal-tab="eventos">Eventos</button>
+        <button class="tab-btn" type="button" data-portal-tab="avisos">Avisos</button>
+        <button class="tab-btn" type="button" data-portal-tab="solicitacoes">Solicitações</button>
+        <button class="tab-btn" type="button" data-portal-tab="carteirinha">Carteirinha</button>
+      </nav>
+
+      <section class="tab-panel active portal-panel" id="portal-tab-inicio">
+        <div class="portal-home-grid">
+          <article class="card">
+            <div class="section-head">
+              <div>
+                <h2>Atalhos rápidos</h2>
+                <p class="muted">Acesse as áreas mais usadas do portal.</p>
+              </div>
+            </div>
+
+            <div class="portal-shortcuts">
+              <button class="shortcut-tile" type="button" data-portal-go="empresa">
+                <strong>Minha empresa</strong>
+                <span>Consultar dados cadastrais.</span>
+              </button>
+
+              <button class="shortcut-tile" type="button" data-portal-go="mensalidades">
+                <strong>Mensalidades</strong>
+                <span>Ver competências pagas e abertas.</span>
+              </button>
+
+              <button class="shortcut-tile" type="button" data-portal-go="recibos">
+                <strong>Recibos</strong>
+                <span>Acessar histórico de recibos.</span>
+              </button>
+
+              <button class="shortcut-tile" type="button" data-portal-go="eventos">
+                <strong>Eventos</strong>
+                <span>Consultar calendário da ACEAP.</span>
+              </button>
+
+              <button class="shortcut-tile" type="button" data-portal-go="avisos">
+                <strong>Avisos</strong>
+                <span>Ler comunicados oficiais.</span>
+              </button>
+
+              <button class="shortcut-tile" type="button" data-portal-go="solicitacoes">
+                <strong>Solicitações</strong>
+                <span>Abrir e acompanhar protocolos.</span>
+              </button>
+
+              <a class="shortcut-tile portal-shortcut-link" href="./catalogo.html" target="_blank" rel="noopener">
+                <strong>Catálogo público</strong>
+                <span>Ver empresas associadas divulgadas pela ACEAP.</span>
+              </a>
+
+              <button class="shortcut-tile" type="button" data-portal-go="carteirinha">
+                <strong>Carteirinha</strong>
+                <span>Visualizar identificação digital.</span>
+              </button>
+            </div>
+          </article>
+
+          <article class="card">
+            <div class="section-head">
+              <div>
+                <h2>Últimos movimentos</h2>
+                <p class="muted">Resumo das informações recentes do associado.</p>
+              </div>
+            </div>
+
+            <div class="portal-timeline">
+              <div>
+                <strong>Recibo disponível</strong>
+                <span>As informações reais aparecem nas abas de mensalidades, recibos e documentos.</span>
+              </div>
+
+              <div>
+                <strong>Documento emitido</strong>
+                <span>Os documentos emitidos no sistema interno aparecem no portal.</span>
+              </div>
+
+              <div>
+                <strong>Carteirinha ativa</strong>
+                <span>A carteirinha usa as informações cadastradas na ACEAP.</span>
+              </div>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section class="tab-panel portal-panel" id="portal-tab-empresa">
+        <div class="card">
+          <div class="section-head">
+            <div>
+              <h2>Minha empresa</h2>
+              <p class="muted">Dados cadastrais exibidos ao associado em modo somente leitura.</p>
+            </div>
+          </div>
+
+          <div class="grid cols-3 portal-profile-grid">
+            <label>
+              Razão social
+              <input id="portalCompanyName" readonly />
+            </label>
+
+            <label>
+              Nome fantasia
+              <input id="portalTradeName" readonly />
+            </label>
+
+            <label>
+              CPF/CNPJ
+              <input id="portalCompanyDocument" readonly />
+            </label>
+
+            <label>
+              Responsável
+              <input id="portalResponsible" readonly />
+            </label>
+
+            <label>
+              WhatsApp
+              <input id="portalWhatsapp" readonly />
+            </label>
+
+            <label>
+              E-mail
+              <input id="portalEmail" readonly />
+            </label>
+
+            <label>
+              Categoria
+              <input id="portalCategory" readonly />
+            </label>
+
+            <label>
+              Data de filiação
+              <input id="portalJoinDate" readonly />
+            </label>
+
+            <label>
+              Status
+              <input id="portalMemberStatus" readonly />
+            </label>
+          </div>
+        </div>
+      </section>
+
+      <section class="tab-panel portal-panel" id="portal-tab-mensalidades">
+        <div class="card">
+          <div class="section-head">
+            <div>
+              <h2>Mensalidades</h2>
+              <p class="muted">Consulta das mensalidades do associado.</p>
+            </div>
+          </div>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Competência</th>
+                  <th>Vencimento</th>
+                  <th>Valor</th>
+                  <th>Status</th>
+                  <th>Ação</th>
+                </tr>
+              </thead>
+              <tbody id="portalDuesTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section class="tab-panel portal-panel" id="portal-tab-recibos">
+        <div class="card">
+          <div class="section-head">
+            <div>
+              <h2>Recibos</h2>
+              <p class="muted">Histórico de recibos emitidos para o associado.</p>
+            </div>
+          </div>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Número</th>
+                  <th>Data</th>
+                  <th>Competência</th>
+                  <th>Valor</th>
+                  <th>Ação</th>
+                </tr>
+              </thead>
+              <tbody id="portalReceiptsTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section class="tab-panel portal-panel" id="portal-tab-documentos">
+        <div class="card">
+          <div class="section-head">
+            <div>
+              <h2>Documentos</h2>
+              <p class="muted">Documentos já emitidos para o associado.</p>
+            </div>
+          </div>
+
+          <div class="portal-document-grid" id="portalDocumentsGrid"></div>
+        </div>
+      </section>
+
+
+      <section class="tab-panel portal-panel" id="portal-tab-eventos">
+        <div class="card">
+          <div class="section-head">
+            <div>
+              <h2>Calendário de eventos</h2>
+              <p class="muted">Eventos, reuniões, cursos e ações publicados pela ACEAP.</p>
+            </div>
+          </div>
+
+          <div id="portalEventsGrid" class="portal-event-grid"></div>
+        </div>
+      </section>
+
+      <section class="tab-panel portal-panel" id="portal-tab-avisos">
+        <div class="card">
+          <div class="section-head">
+            <div>
+              <h2>Quadro de avisos</h2>
+              <p class="muted">Comunicados oficiais publicados pela associação.</p>
+            </div>
+          </div>
+
+          <div id="portalAnnouncementsBoard" class="portal-announcement-board"></div>
+        </div>
+      </section>
+
+      
+      <section class="tab-panel portal-panel" id="portal-tab-solicitacoes">
+        <div class="layout-two">
+          <div class="card">
+            <div class="section-head">
+              <div>
+                <h2>Nova solicitação</h2>
+                <p class="muted">Abra um protocolo para a equipe da ACEAP acompanhar.</p>
+              </div>
+            </div>
+
+            <form id="portalRequestForm" class="grid">
+              <label>
+                Tipo
+                <select id="portalRequestType">
+                  <option value="ATUALIZACAO_CADASTRAL">Atualização cadastral</option>
+                  <option value="DECLARACAO">Declaração</option>
+                  <option value="SEGUNDA_VIA">Segunda via</option>
+                  <option value="SUPORTE">Suporte</option>
+                  <option value="CATALOGO">Catálogo</option>
+                  <option value="DESLIGAMENTO">Desligamento</option>
+                  <option value="OUTRO">Outro</option>
+                </select>
+              </label>
+
+              <label class="full">
+                Descrição
+                <textarea id="portalRequestMessageText" rows="5" placeholder="Descreva sua solicitação"></textarea>
+              </label>
+
+              <div class="actions full">
+                <button id="portalRequestSubmitBtn" class="btn btn-primary" type="submit">Abrir protocolo</button>
+              </div>
+
+              <p id="portalRequestMessage" class="message full"></p>
+            </form>
+          </div>
+
+          <div class="card">
+            <div class="section-head">
+              <div>
+                <h2>Meus protocolos</h2>
+                <p class="muted">Acompanhe o andamento das solicitações abertas.</p>
+              </div>
+              <button id="portalRequestsRefreshBtn" class="btn btn-secondary" type="button">Atualizar</button>
+            </div>
+
+            <div id="portalRequestsList" class="portal-request-list"></div>
+          </div>
+        </div>
+      </section>
+
+<section class="tab-panel portal-panel" id="portal-tab-carteirinha">
+        <div class="portal-card-layout">
+          <article class="card portal-member-card-panel">
+            <div class="section-head">
+              <div>
+                <h2>Carteirinha digital</h2>
+                <p class="muted">Identificação digital do associado.</p>
+              </div>
+              <button id="portalPrintCardBtn" class="btn btn-primary" type="button">Imprimir carteirinha</button>
+            </div>
+
+            <div class="portal-member-card" aria-label="Carteirinha digital do associado">
+              <div class="portal-member-card-head">
+                <img src="./assets/aceap-logo.png" alt="ACEAP" />
+                <div>
+                  <strong>Carteirinha do Associado</strong>
+                  <span>Associação Comercial e Empresarial</span>
+                </div>
+              </div>
+
+              <div class="portal-member-card-body">
+                <span>Empresa</span>
+                <strong id="portalCardCompany">Empresa Exemplo LTDA</strong>
+
+                <span>CPF/CNPJ</span>
+                <strong id="portalCardDocument">00.000.000/0001-00</strong>
+
+                <span>Status</span>
+                <strong id="portalCardMemberStatus">Ativo</strong>
+
+                <span>Validade</span>
+                <strong id="portalCardValidity">31/12/2026</strong>
+              </div>
+
+              <div class="portal-card-qr">
+                <img id="portalCardQrImage" class="portal-qr-image" alt="QR Code da carteirinha" />
+                <span id="portalCardQrText">QR Code de verificação da carteirinha.</span>
+              </div>
+            </div>
+          </article>
+
+          <aside class="card">
+            <div class="section-head">
+              <div>
+                <h2>Observações</h2>
+                <p class="muted">QR Code demonstrativo com dados do associado.</p>
+              </div>
+            </div>
+
+            <div class="portal-info-list">
+              <p>O QR Code contém dados de identificação do associado para conferência rápida.</p>
+              <p>Na implantação real, ele pode apontar para uma página pública de validação.</p>
+              <p>Use a impressão do navegador para gerar uma via simples.</p>
+            </div>
+          </aside>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="./assets/runtime-config.js"></script>
+  <script src="./assets/api.js"></script>
+  <script src="./assets/portal.js"></script>
+</body>
+</html>

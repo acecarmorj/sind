@@ -8,7 +8,7 @@
   function getApiUrl() {
     var url = String(getRuntime().API_URL || '').trim();
     if (!url || url.indexOf('COLE_AQUI') >= 0) {
-      throw new Error('Configure a URL da API em assets/runtime-config.js');
+      throw new Error('Serviço indisponível. Verifique a configuração do sistema.');
     }
     return url;
   }
@@ -31,10 +31,10 @@
     try {
       data = JSON.parse(text);
     } catch (error) {
-      throw new Error('Resposta inválida da API');
+      throw new Error('Não foi possível carregar as informações no momento.');
     }
     if (!data.ok) {
-      throw new Error(data.message || 'Falha na API');
+      throw new Error(data.message || 'Não foi possível concluir a solicitação.');
     }
     return data;
   }
