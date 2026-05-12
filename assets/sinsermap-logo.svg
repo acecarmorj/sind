@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 680 160" role="img" aria-label="SINSERMAP - Sindicato dos Servidores Públicos Municipais de Além Paraíba">
+  <defs>
+    <linearGradient id="g" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="#2f6f46"/>
+      <stop offset="100%" stop-color="#225235"/>
+    </linearGradient>
+  </defs>
+  <rect width="680" height="160" rx="18" fill="#ffffff"/>
+  <circle cx="74" cy="80" r="48" fill="url(#g)"/>
+  <path d="M48 94c14 18 39 19 55 4 8-8 11-18 9-28" fill="none" stroke="#f6f0dc" stroke-width="11" stroke-linecap="round"/>
+  <path d="M41 74c12-19 38-24 56-12" fill="none" stroke="#c8a23a" stroke-width="11" stroke-linecap="round"/>
+  <text x="142" y="70" font-family="Segoe UI, Arial, sans-serif" font-size="48" font-weight="800" fill="#225235" letter-spacing="1">SINSERMAP</text>
+  <text x="144" y="104" font-family="Segoe UI, Arial, sans-serif" font-size="19" font-weight="700" fill="#2f6f46">Sindicato dos Servidores Públicos Municipais</text>
+  <text x="144" y="132" font-family="Segoe UI, Arial, sans-serif" font-size="18" font-weight="600" fill="#66727c">Além Paraíba - MG</text>
+</svg>

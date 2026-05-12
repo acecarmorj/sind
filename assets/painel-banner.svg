@@ -1,0 +1,33 @@
+<svg width="960" height="360" viewBox="0 0 960 360" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Banner institucional do SINSERMAP">
+  <rect width="960" height="360" rx="36" fill="#F2FAF4"/>
+  <path d="M0 260C110 221 202 238 302 271C420 310 531 335 663 289C781 248 858 242 960 274V360H0V260Z" fill="#D9EFE0"/>
+  <path d="M0 284C115 250 218 262 317 294C437 332 552 349 671 312C780 278 864 276 960 305V360H0V284Z" fill="#CDE6D6"/>
+  <circle cx="818" cy="82" r="54" fill="#F0C95C"/>
+  <circle cx="818" cy="82" r="70" stroke="#F6DEA0" stroke-width="18" opacity=".85"/>
+  <rect x="92" y="132" width="104" height="140" rx="14" fill="#2F6F46"/>
+  <rect x="220" y="92" width="132" height="180" rx="18" fill="#3F8557"/>
+  <rect x="380" y="122" width="102" height="150" rx="14" fill="#5EA36F"/>
+  <path d="M82 132L144 82L206 132H82Z" fill="#C8A23A"/>
+  <path d="M210 92L286 38L362 92H210Z" fill="#D5B34A"/>
+  <path d="M370 122L431 75L492 122H370Z" fill="#E5C66A"/>
+  <rect x="116" y="160" width="22" height="28" rx="4" fill="#F7FFF9"/>
+  <rect x="152" y="160" width="22" height="28" rx="4" fill="#F7FFF9"/>
+  <rect x="116" y="204" width="22" height="28" rx="4" fill="#F7FFF9"/>
+  <rect x="152" y="204" width="22" height="28" rx="4" fill="#F7FFF9"/>
+  <rect x="248" y="126" width="24" height="30" rx="5" fill="#F7FFF9"/>
+  <rect x="300" y="126" width="24" height="30" rx="5" fill="#F7FFF9"/>
+  <rect x="248" y="176" width="24" height="30" rx="5" fill="#F7FFF9"/>
+  <rect x="300" y="176" width="24" height="30" rx="5" fill="#F7FFF9"/>
+  <rect x="410" y="156" width="26" height="32" rx="5" fill="#F7FFF9"/>
+  <rect x="410" y="206" width="26" height="32" rx="5" fill="#F7FFF9"/>
+  <circle cx="625" cy="205" r="42" fill="#2F6F46"/>
+  <path d="M568 285C575 244 597 224 625 224C653 224 675 244 682 285H568Z" fill="#2F6F46"/>
+  <circle cx="748" cy="206" r="36" fill="#C8A23A"/>
+  <path d="M700 285C706 249 725 232 748 232C771 232 790 249 796 285H700Z" fill="#C8A23A"/>
+  <circle cx="678" cy="178" r="30" fill="#6FB57D"/>
+  <path d="M638 284C644 248 660 231 678 231C696 231 712 248 718 284H638Z" fill="#6FB57D"/>
+  <path d="M585 102H732" stroke="#2F6F46" stroke-width="12" stroke-linecap="round"/>
+  <path d="M585 136H786" stroke="#C8A23A" stroke-width="12" stroke-linecap="round"/>
+  <path d="M585 170H760" stroke="#6FB57D" stroke-width="12" stroke-linecap="round"/>
+  <text x="90" y="320" fill="#163523" font-family="Arial, Helvetica, sans-serif" font-size="28" font-weight="700">Informação pública do servidor municipal</text>
+</svg>

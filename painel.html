@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SINSERMAP | Informativo</title>
+  <meta name="description" content="Informações públicas do SINSERMAP: comunicados, agenda, atas, documentos, cursos e serviços." />
+  <meta name="theme-color" content="#2f6f46" />
+  <link rel="stylesheet" href="./assets/styles.css" />
+</head>
+<body class="public-site-body">
+  <main class="public-site-main">
+    <section class="public-site-hero" aria-labelledby="publicSiteTitle">
+      <div class="public-site-banner-card" aria-label="Sindicato dos Servidores Públicos Municipais de Além Paraíba">
+        <img class="public-site-banner" src="./assets/sede-sinsermap.jpg" alt="Sede estilizada do SINSERMAP" />
+        <p class="public-site-banner-caption">Sindicato dos Servidores Públicos Municipais de Além Paraíba</p>
+      </div>
+      <div class="public-site-hero-copy">
+        <span>Portal informativo</span>
+        <h1 id="publicSiteTitle">SINSERMAP</h1>
+        <p>Comunicados, assembleias, documentos, atas, cursos, serviços e informações públicas do sindicato em um só lugar.</p>
+      </div>
+    </section>
+
+    <section class="public-site-union-message" aria-labelledby="unionMessageTitle">
+      <div class="public-site-union-icon" aria-hidden="true">“</div>
+      <div>
+        <span>Mensagem do Sindicato</span>
+        <h2 id="unionMessageTitle">Participação fortalece a categoria</h2>
+        <p id="unionMessageText">Juntos, os servidores têm mais força, voz e representação.</p>
+      </div>
+    </section>
+
+    <p id="publicMessage" class="message public-site-message hidden"></p>
+
+    <section id="comunicados" class="public-site-section public-content-section hidden">
+      <div class="public-site-section-title">
+        <span>Comunicados</span>
+        <h2>Avisos oficiais</h2>
+      </div>
+      <div id="publicComunicadoList" class="public-site-list"></div>
+    </section>
+
+    <section id="agenda" class="public-site-section public-content-section hidden">
+      <div class="public-site-section-title">
+        <span>Agenda</span>
+        <h2>Assembleias, reuniões e eventos</h2>
+      </div>
+      <div id="publicAgendaList" class="public-site-list"></div>
+    </section>
+
+    <section id="cursos" class="public-site-section public-content-section hidden">
+      <div class="public-site-section-title">
+        <span>Cursos</span>
+        <h2>Capacitações e inscrições</h2>
+      </div>
+      <div id="publicCursoList" class="public-site-list"></div>
+    </section>
+
+    <section id="servicos" class="public-site-section public-content-section hidden">
+      <div class="public-site-section-title">
+        <span>Serviços</span>
+        <h2>Orientações ao servidor</h2>
+      </div>
+      <div id="publicServicoList" class="public-site-list"></div>
+    </section>
+
+    <section id="documentos" class="public-site-section public-content-section hidden">
+      <div class="public-site-section-title">
+        <span>Documentos e atas</span>
+        <h2>Arquivos e registros públicos</h2>
+      </div>
+
+      <div id="documentosSubsection" class="public-site-subsection hidden">
+        <h3>Documentos</h3>
+        <div id="publicDocumentoList" class="public-site-list"></div>
+      </div>
+
+      <div id="atasSubsection" class="public-site-subsection hidden">
+        <h3>Atas</h3>
+        <div id="publicAtaList" class="public-site-list"></div>
+      </div>
+    </section>
+
+    <section id="links-uteis" class="public-site-section public-site-useful-links" aria-labelledby="usefulLinksTitle">
+      <div class="public-site-section-title">
+        <span>Links úteis</span>
+        <h2 id="usefulLinksTitle">Acesso rápido para servidores</h2>
+      </div>
+
+      <div class="public-site-link-grid">
+        <a href="http://45.65.205.114:84/" target="_blank" rel="noopener noreferrer">
+          <strong>Contracheque do servidor</strong>
+          <span>Acesso ao sistema de contracheque online.</span>
+        </a>
+        <a href="https://leismunicipais.com.br/a1/estatuto-do-servidor-funcionario-publico-alem-paraiba-mg" target="_blank" rel="noopener noreferrer">
+          <strong>Estatuto do servidor</strong>
+          <span>Consulta ao estatuto do servidor público municipal.</span>
+        </a>
+        <a href="https://leismunicipais.com.br/a1/plano-de-cargos-e-carreiras-alem-paraiba-mg" target="_blank" rel="noopener noreferrer">
+          <strong>Plano de cargos e carreiras</strong>
+          <span>Legislação municipal sobre cargos, carreira e vencimentos.</span>
+        </a>
+        <a href="https://www.alemparaiba.mg.gov.br/transparencia.html" target="_blank" rel="noopener noreferrer">
+          <strong>Portal da Transparência</strong>
+          <span>Dados públicos, despesas, licitações e gestão municipal.</span>
+        </a>
+        <a href="https://www.alemparaiba.mg.gov.br/servicos/carta-de-servicos.html" target="_blank" rel="noopener noreferrer">
+          <strong>Carta de serviços</strong>
+          <span>Serviços oficiais disponíveis ao cidadão.</span>
+        </a>
+        <a href="https://www.alemparaiba.mg.gov.br/servicos/ouvidoria.html" target="_blank" rel="noopener noreferrer">
+          <strong>Ouvidoria</strong>
+          <span>Canal para manifestações, solicitações e acompanhamento.</span>
+        </a>
+        <a href="https://www.alemparaiba.mg.gov.br/servicos/noticias.html" target="_blank" rel="noopener noreferrer">
+          <strong>Notícias da Prefeitura</strong>
+          <span>Comunicados e notícias oficiais do município.</span>
+        </a>
+        <a href="https://www.alemparaiba.mg.gov.br/servicos/sistema-eletr%C3%B4nico-de-informa%C3%A7%C3%B5es-sei.html" target="_blank" rel="noopener noreferrer">
+          <strong>Acesso ao SEI</strong>
+          <span>Sistema Eletrônico de Informações da Prefeitura.</span>
+        </a>
+        <a href="https://www.alemparaiba.mg.gov.br/app/public/index.php" target="_blank" rel="noopener noreferrer">
+          <strong>Além Digital</strong>
+          <span>Aplicativo e serviços digitais do município.</span>
+        </a>
+      </div>
+    </section>
+
+    <section id="contato" class="public-site-contact public-site-contact-plain" aria-label="Contato do SINSERMAP">
+      <dl>
+        <div>
+          <dt>Sindicato</dt>
+          <dd>SINSERMAP - Sindicato dos Servidores Públicos Municipais de Além Paraíba</dd>
+        </div>
+        <div>
+          <dt>Endereço</dt>
+          <dd>Rua Dr. José Tepedino, 80 - Ilha do Lazareto, Além Paraíba - MG, 36660-000, Brazil</dd>
+        </div>
+        <div>
+          <dt>Telefone</dt>
+          <dd><a href="tel:+553234624510">(32) 3462-4510</a></dd>
+        </div>
+        <div>
+          <dt>Localização</dt>
+          <dd>
+            <a href="https://www.google.com/maps/search/?api=1&query=Rua%20Dr%20Jos%C3%A9%20Tepedino%2C%2080%20-%20Ilha%20do%20Lazareto%2C%20Al%C3%A9m%20Para%C3%ADba%20-%20MG%2C%2036660-000%2C%20Brazil" target="_blank" rel="noopener noreferrer">
+              Ver localização no mapa
+            </a>
+          </dd>
+        </div>
+      </dl>
+    </section>
+  </main>
+
+  <footer class="public-site-footer">
+    <p>SINSERMAP - Sindicato dos Servidores Públicos Municipais de Além Paraíba</p>
+  </footer>
+
+  <script src="./assets/runtime-config.js"></script>
+  <script src="./assets/api.js"></script>
+  <script src="./assets/painel.js"></script>
+</body>
+</html>

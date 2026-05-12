@@ -1,33 +1,13 @@
-COMANDOS DE DEMONSTRAÇÃO - ACEAP
+TESTE RÁPIDO
 
-Arquivo de API atualizado:
-- api.txt
-
-Opção mais simples pelo editor do Google Apps Script:
-1. Para gerar a massa fictícia:
-   executar a função: gerarDadosDemoParaApresentacao
-
-2. Para limpar os dados depois da apresentação:
-   executar a função: apagarDadosDemoDepoisApresentacao
-
-Opção via API, estando logado como ADMIN:
-1. Gerar dados:
-   action: demo_seed_data
-   payload:
-   {
-     "confirmation": "CRIAR_DADOS_DEMO",
-     "count": 300
-   }
-
-2. Apagar dados:
-   action: demo_clear_data
-   payload:
-   {
-     "confirmation": "APAGAR_DADOS_DEMO"
-   }
-
-Observações:
-- Usuários e configurações são preservados.
-- Os dados operacionais são limpos antes de gerar nova demonstração.
-- A massa inclui associados, mensalidades, caixa, contas a pagar, eventos, avisos, catálogo e protocolos.
-- PDFs/documentos reais no Drive não são gerados para evitar lentidão e consumo de quota.
+1. Abra index.html depois de configurar assets/runtime-config.js.
+2. O painel público abre sem senha.
+3. Clique em Área interna e entre com admin / 123456.
+4. Vá em Configuração e cadastre uma opção de Onde trabalha, Setor e Função/cargo.
+5. Cadastre uma informação em Painel público e um usuário de teste, se desejar.
+6. Cadastre um associado com:
+   - Onde trabalha: Prefeitura Municipal
+   - Setor: Educação
+   - Função: Professor
+7. Vá em Consultar e filtre por Professor.
+8. Vá em Relatórios e gere relatório por local, setor e função.

@@ -200,7 +200,7 @@ h2 {
 
 .overview-strip {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(340px, 0.62fr);
+  grid-template-columns: 1fr;
   gap: 14px;
   align-items: stretch;
   margin-bottom: 14px;
@@ -232,15 +232,6 @@ h2 {
   line-height: 1.45;
 }
 
-.overview-note {
-  display: grid;
-  gap: 8px;
-  align-content: center;
-  padding: 10px 12px;
-  background: #f7f8f8;
-  border: 1px solid var(--border);
-  border-radius: 3px;
-}
 
 .overview-strip .muted {
   min-height: 34px;
@@ -254,22 +245,7 @@ h2 {
   opacity: 0;
 }
 
-.routine-checks {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
 
-.routine-checks span {
-  display: inline-flex;
-  padding: 4px 7px;
-  border: 1px solid var(--border);
-  border-radius: 3px;
-  background: #ffffff;
-  color: #3c474f;
-  font-size: 12px;
-  font-weight: 600;
-}
 
 .eyebrow {
   color: var(--primary-dark);
@@ -954,7 +930,7 @@ a.link-btn {
   background: #fffefe;
 }
 
-.caixa-command-card {
+.assoc-command-card {
   border-left: 3px solid #8aa895;
 }
 
@@ -1352,7 +1328,7 @@ a.link-btn {
   }
 }
 
-.tab-caixa-despesas {
+.tab-assoc-detalhes {
   font-weight: 700;
 }
 
@@ -1373,7 +1349,7 @@ a.link-btn {
 }
 
 
-/* ERP Windows refinado - ACEAP */
+/* Sistema de cadastro de associados - SINSERMAP */
 :root {
   --window-bg: #dfe3e6;
   --panel-bg: #f4f6f7;
@@ -3168,7 +3144,6 @@ body {
 .login-card,
 .table-wrap,
 .overview-strip,
-.overview-note,
 .panel-block,
 .module-context-card,
 .workspace-card,
@@ -3254,10 +3229,6 @@ body {
   color: var(--primary-dark);
 }
 
-.overview-note {
-  border-color: rgba(197, 154, 47, 0.22);
-  background: rgba(255, 247, 226, 0.58);
-}
 
 .btn {
   border-radius: 999px;
@@ -3800,7 +3771,6 @@ button {
 .login-card,
 .table-wrap,
 .overview-strip,
-.overview-note,
 .panel-block,
 .module-context-card,
 .workspace-card,
@@ -4043,7 +4013,7 @@ textarea {
 
 /* Financeiro pode ter vários quadros na mesma tela; cada lista fica controlada. */
 #tab-relatorios .table-wrap,
-#tab-caixa .table-wrap {
+#tab-assoc .table-wrap {
   max-height: min(42vh, 420px);
 }
 
@@ -4094,14 +4064,14 @@ textarea {
   }
 
   #tab-relatorios .table-wrap,
-  #tab-caixa .table-wrap {
+  #tab-assoc .table-wrap {
     max-height: min(38vh, 360px);
   }
 }
 
 
 /* ==========================================================
-   Livro caixa: entradas e saídas em ordem cronológica
+   Cadastro de associados: consultas e relatórios internos
    ========================================================== */
 
 .cash-book-card {
@@ -4179,4 +4149,1182 @@ textarea {
 
 #tab-relatorios .cash-book-table-wrap {
   max-height: min(54vh, 560px);
+}
+
+
+/* Cadastro de Associados - ajustes específicos */
+.assoc-toolbar-card {
+  margin-bottom: 12px;
+}
+
+.assoc-summary-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.member-detail-card {
+  display: grid;
+  gap: 8px;
+}
+
+.member-detail-card dl {
+  display: grid;
+  grid-template-columns: 160px minmax(0, 1fr);
+  gap: 6px 12px;
+  margin: 0;
+}
+
+.member-detail-card dt {
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.member-detail-card dd {
+  margin: 0;
+}
+
+
+
+.config-user-card {
+  margin-bottom: 12px;
+}
+
+.config-user-card .actions {
+  align-self: end;
+}
+
+.option-manager-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.option-manager-card {
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 14px;
+  background: #ffffff;
+  box-shadow: var(--shadow);
+}
+
+.option-manager-card h3 {
+  margin: 0;
+  color: #202a31;
+  font-size: 16px;
+}
+
+.compact-head {
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+
+.option-form {
+  gap: 10px;
+}
+
+.option-actions {
+  display: flex;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.option-actions .btn {
+  min-height: 30px;
+  padding: 5px 8px;
+  font-size: 12px;
+}
+
+@media (max-width: 1180px) {
+  
+.config-user-card {
+  margin-bottom: 12px;
+}
+
+.config-user-card .actions {
+  align-self: end;
+}
+
+.option-manager-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.report-layout {
+  display: grid;
+  gap: 12px;
+}
+
+.report-group-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.report-card {
+  min-height: 100%;
+}
+
+.report-print-title {
+  display: none;
+}
+
+@media print {
+  body {
+    background: #ffffff;
+  }
+
+  .topbar,
+  .tabs,
+  .no-print,
+  #globalMessage {
+    display: none !important;
+  }
+
+  .page {
+    max-width: none;
+    padding: 0;
+  }
+
+  .tab-panel {
+    display: none !important;
+  }
+
+  #tab-relatorios {
+    display: block !important;
+  }
+
+  .card,
+  .stats-privacy-card,
+  .overview-strip {
+    box-shadow: none;
+    break-inside: avoid;
+  }
+
+  .report-print-title {
+    display: block;
+    margin: 0 0 12px;
+  }
+}
+
+@media (max-width: 1180px) {
+  .report-group-grid,
+  .assoc-summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .report-group-grid,
+  .assoc-summary-grid,
+  .member-detail-card dl {
+    grid-template-columns: 1fr;
+  }
+}
+
+
+/* Painel público SINSERMAP */
+.public-site-screen {
+  min-height: 100vh;
+}
+
+.public-page {
+  display: grid;
+  gap: 14px;
+}
+
+.public-hero {
+  margin-bottom: 0;
+}
+
+.public-hero-note {
+  display: grid;
+  align-content: center;
+  gap: 8px;
+  padding: 14px;
+  border: 1px solid rgba(35, 102, 63, 0.18);
+  border-radius: var(--radius-sm, 10px);
+  background: linear-gradient(135deg, rgba(237, 246, 241, 0.96), rgba(255, 247, 226, 0.74));
+}
+
+.public-contact-card {
+  border-left: 4px solid var(--accent);
+}
+
+.public-contact-grid {
+  display: grid;
+  grid-template-columns: 1.15fr 1.45fr 0.7fr;
+  gap: 12px;
+}
+
+.public-contact-item {
+  display: grid;
+  gap: 4px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm, 10px);
+  background: #fbfcfc;
+}
+
+.public-contact-item span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.public-contact-item strong {
+  color: var(--text);
+  line-height: 1.35;
+}
+
+.public-contact-item a {
+  color: var(--primary-dark);
+  text-decoration: none;
+}
+
+.public-map-link {
+  white-space: nowrap;
+}
+
+.public-panel {
+  display: none;
+}
+
+.public-panel.active {
+  display: block;
+}
+
+.public-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 12px;
+}
+
+.public-info-card {
+  display: grid;
+  align-content: start;
+  gap: 9px;
+  min-height: 150px;
+  padding: 15px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm, 10px);
+  background: #fbfcfc;
+  box-shadow: var(--shadow);
+}
+
+.public-info-card strong {
+  color: var(--primary-dark);
+  font-size: 16px;
+  line-height: 1.3;
+}
+
+.public-info-card p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.public-info-card small {
+  color: #405047;
+  line-height: 1.35;
+}
+
+.public-info-card .btn {
+  width: fit-content;
+  margin-top: auto;
+}
+
+.public-config-card {
+  margin-bottom: 12px;
+}
+
+@media (max-width: 980px) {
+  .public-contact-grid,
+  .portal-hero,
+  .portal-home-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .public-map-link {
+    width: 100%;
+  }
+}
+
+@media (max-width: 640px) {
+  .public-card-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+
+
+/* ==========================================================
+   Painel público responsivo para celular
+   Mantém a área pública sem senha e melhora leitura/toque.
+   ========================================================== */
+
+.public-topbar {
+  align-items: stretch;
+}
+
+.public-topbar .brand-lockup {
+  min-width: 0;
+}
+
+.public-topbar .brand-lockup > div:last-child {
+  min-width: 0;
+}
+
+.public-topbar h1,
+.public-hero h2,
+.public-contact-item strong,
+.public-info-card strong {
+  overflow-wrap: anywhere;
+}
+
+.public-topbar .portal-session-panel {
+  min-width: 260px;
+}
+
+.public-page {
+  max-width: 1272px;
+}
+
+.public-hero {
+  grid-template-columns: minmax(0, 1.4fr) minmax(260px, 0.6fr);
+}
+
+.public-hero .overview-copy h2 {
+  font-size: clamp(1.25rem, 2.8vw, 1.9rem);
+}
+
+.public-tabs {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  overflow-x: auto;
+  flex-wrap: nowrap;
+  -webkit-overflow-scrolling: touch;
+}
+
+.public-tabs .tab-btn {
+  flex: 0 0 auto;
+  min-height: 44px;
+  white-space: nowrap;
+}
+
+.public-info-card,
+.public-contact-item {
+  overflow: hidden;
+}
+
+.public-info-card .btn,
+.public-map-link,
+.public-topbar .btn {
+  min-height: 44px;
+}
+
+@media (max-width: 760px) {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    font-size: 15px;
+  }
+
+  .public-site-screen {
+    background:
+      radial-gradient(circle at top left, rgba(35, 102, 63, 0.12), transparent 18rem),
+      var(--bg);
+  }
+
+  .public-topbar {
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    padding: 12px 10px;
+    border-radius: 0 !important;
+    gap: 10px;
+  }
+
+  .public-topbar .brand-lockup {
+    gap: 10px;
+    align-items: center;
+  }
+
+  .public-topbar .brand-mark {
+    width: 86px;
+    height: 54px;
+    flex: 0 0 auto;
+    padding: 6px;
+  }
+
+  .public-topbar h1 {
+    font-size: 18px;
+    line-height: 1.18;
+  }
+
+  .public-topbar .brand-lockup .muted {
+    font-size: 12px;
+    line-height: 1.35;
+  }
+
+  .public-topbar .portal-session-panel {
+    min-width: 0;
+    padding: 10px;
+  }
+
+  .public-topbar .system-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    width: 100%;
+  }
+
+  .public-topbar .btn {
+    width: 100%;
+    padding: 10px 12px;
+  }
+
+  .public-page {
+    padding: 12px 10px 22px;
+    gap: 12px;
+  }
+
+  .public-hero {
+    grid-template-columns: 1fr;
+    padding: 14px;
+    gap: 10px;
+  }
+
+  .public-hero .overview-copy {
+    gap: 8px;
+  }
+
+  .public-hero .overview-copy h2 {
+    font-size: 22px;
+    line-height: 1.15;
+  }
+
+  .public-hero .overview-copy p,
+  .public-hero-note p {
+    font-size: 14px;
+    line-height: 1.45;
+  }
+
+  .public-hero-note {
+    padding: 12px;
+  }
+
+  .public-contact-card {
+    padding: 14px;
+  }
+
+  .public-contact-card .section-head {
+    gap: 10px;
+  }
+
+  .public-contact-grid {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .public-contact-item {
+    padding: 11px;
+  }
+
+  .public-contact-item span {
+    font-size: 11px;
+  }
+
+  .public-contact-item strong {
+    font-size: 14px;
+    line-height: 1.4;
+  }
+
+  .public-map-link {
+    width: 100%;
+    padding: 10px 12px;
+  }
+
+  .public-tabs {
+    display: flex !important;
+    margin: 0 -10px 10px;
+    padding: 8px 10px;
+    gap: 8px;
+    border-left: 0;
+    border-right: 0;
+    border-radius: 0 !important;
+    background: rgba(239, 245, 241, 0.96);
+    backdrop-filter: blur(8px);
+    scroll-snap-type: x mandatory;
+  }
+
+  .public-tabs .tab-btn {
+    min-height: 44px;
+    padding: 10px 12px;
+    border: 1px solid rgba(35, 102, 63, 0.16);
+    border-radius: 4px !important;
+    scroll-snap-align: start;
+  }
+
+  .public-tabs .tab-btn.active {
+    box-shadow: inset 0 -3px 0 var(--primary);
+  }
+
+  .portal-home-grid,
+  .report-group-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .public-panel .card {
+    padding: 14px;
+  }
+
+  .public-panel .section-head {
+    gap: 8px;
+  }
+
+  .public-panel .section-head h2 {
+    font-size: 18px;
+    line-height: 1.2;
+  }
+
+  .public-panel .section-head p {
+    font-size: 14px;
+    line-height: 1.4;
+  }
+
+  .public-card-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .public-info-card {
+    min-height: auto;
+    padding: 13px;
+    gap: 8px;
+  }
+
+  .public-info-card strong {
+    font-size: 16px;
+  }
+
+  .public-info-card p,
+  .public-info-card small {
+    font-size: 14px;
+    line-height: 1.45;
+  }
+
+  .public-info-card .btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .portal-timeline > div {
+    padding: 12px;
+  }
+}
+
+@media (max-width: 420px) {
+  .public-topbar .brand-lockup {
+    align-items: flex-start;
+  }
+
+  .public-topbar .brand-mark {
+    width: 74px;
+    height: 48px;
+  }
+
+  .public-topbar h1 {
+    font-size: 16px;
+  }
+
+  .public-topbar .brand-lockup .muted {
+    font-size: 11px;
+  }
+
+  .public-topbar .system-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .public-hero .overview-copy h2 {
+    font-size: 20px;
+  }
+
+  .public-contact-card,
+  .public-panel .card {
+    padding: 12px;
+  }
+
+  .public-tabs .tab-btn {
+    padding: 10px 11px;
+  }
+}
+
+/* Painel público separado: site institucional simples, alegre e mobile-first */
+.public-site-body {
+  min-height: 100vh;
+  overflow-x: hidden;
+  background:
+    radial-gradient(circle at top left, rgba(240, 201, 92, 0.28), transparent 280px),
+    radial-gradient(circle at 85% 12%, rgba(111, 181, 125, 0.22), transparent 260px),
+    linear-gradient(180deg, #f7fbf4 0%, #eef7f0 47%, #f9faf7 100%);
+  color: #1e3026;
+  font-size: 16px;
+  line-height: 1.58;
+}
+
+.public-site-body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background-image:
+    linear-gradient(120deg, rgba(47, 111, 70, 0.06) 0 1px, transparent 1px),
+    linear-gradient(30deg, rgba(200, 162, 58, 0.055) 0 1px, transparent 1px);
+  background-size: 42px 42px;
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+.public-site-body a {
+  color: #22603d;
+  font-weight: 800;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 4px;
+}
+
+.public-site-header {
+  background: rgba(255, 255, 255, 0.82);
+  border-bottom: 1px solid rgba(47, 111, 70, 0.12);
+  backdrop-filter: blur(10px);
+}
+
+.public-site-header-inner {
+  width: min(100%, 1040px);
+  margin: 0 auto;
+  padding: 18px 18px 14px;
+}
+
+.public-site-logo {
+  display: block;
+  width: 220px;
+  max-width: 100%;
+  height: auto;
+  margin-bottom: 9px;
+}
+
+.public-site-header p {
+  max-width: 620px;
+  margin: 0;
+  color: #526459;
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.public-site-main {
+  width: min(100%, 1040px);
+  margin: 0 auto;
+  padding: 18px 14px 34px;
+}
+
+.public-site-hero {
+  display: grid;
+  gap: 16px;
+  margin-bottom: 22px;
+}
+
+.public-site-banner-card {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(47, 111, 70, 0.12);
+  border-radius: 28px;
+  background: #eaf5ed;
+  box-shadow: 0 18px 45px rgba(24, 70, 43, 0.14);
+}
+
+.public-site-banner-card::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 0;
+  height: 34%;
+  background:
+    radial-gradient(90% 90% at 15% 20%, rgba(255, 255, 255, 0.36), transparent 58%),
+    linear-gradient(180deg, rgba(217, 239, 224, 0.46), rgba(205, 230, 214, 0.94));
+  pointer-events: none;
+}
+
+.public-site-banner {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  height: auto;
+  object-fit: cover;
+}
+
+.public-site-banner-caption {
+  position: absolute;
+  left: clamp(18px, 5vw, 46px);
+  right: clamp(18px, 5vw, 46px);
+  bottom: clamp(14px, 3.8vw, 34px);
+  z-index: 1;
+  margin: 0;
+  color: #123820;
+  font-size: clamp(1.02rem, 4vw, 1.65rem);
+  font-weight: 900;
+  line-height: 1.12;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.55);
+}
+
+.public-site-hero-copy {
+  position: relative;
+  padding: 8px 4px 2px;
+}
+
+.public-site-hero-copy::before {
+  content: "";
+  position: absolute;
+  left: 4px;
+  top: 0;
+  width: 64px;
+  height: 5px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #2f6f46, #c8a23a);
+}
+
+.public-site-hero span,
+.public-site-section-title span,
+.public-site-item-type,
+.public-site-contact dt {
+  color: #2f6f46;
+  font-size: 0.75rem;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.public-site-hero h1 {
+  margin: 13px 0 8px;
+  color: #143722;
+  font-size: clamp(2.35rem, 15vw, 5.4rem);
+  line-height: 0.9;
+  letter-spacing: -0.06em;
+}
+
+.public-site-hero p {
+  max-width: 760px;
+  margin: 0;
+  color: #46584d;
+  font-size: 1.06rem;
+  font-weight: 650;
+}
+
+.public-site-union-message {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 13px;
+  align-items: start;
+  margin: 4px 0 20px;
+  padding: 18px 16px;
+  overflow: hidden;
+  border: 1px solid rgba(200, 162, 58, 0.22);
+  border-radius: 24px;
+  background:
+    radial-gradient(circle at 100% 0%, rgba(200, 162, 58, 0.22), transparent 140px),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(247, 252, 248, 0.94));
+  box-shadow: 0 12px 30px rgba(30, 70, 43, 0.08);
+}
+
+.public-site-union-message::after {
+  content: "";
+  position: absolute;
+  right: -26px;
+  bottom: -34px;
+  width: 118px;
+  height: 118px;
+  border-radius: 999px;
+  background: rgba(47, 111, 70, 0.08);
+}
+
+.public-site-union-icon {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 18px;
+  background: linear-gradient(135deg, #2f6f46, #4e9465);
+  color: #fff7df;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 3.1rem;
+  line-height: 1;
+  box-shadow: 0 8px 20px rgba(47, 111, 70, 0.18);
+}
+
+.public-site-union-message span {
+  color: #9a7a21;
+  font-size: 0.74rem;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.public-site-union-message h2 {
+  margin: 4px 0 5px;
+  color: #173822;
+  font-size: clamp(1.35rem, 7vw, 2.15rem);
+  line-height: 1.03;
+  letter-spacing: -0.04em;
+}
+
+.public-site-union-message p {
+  position: relative;
+  z-index: 1;
+  margin: 0;
+  color: #425449;
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.48;
+}
+
+
+.public-site-message {
+  margin: 12px 0;
+  border-radius: 18px;
+}
+
+.public-site-section,
+.public-site-contact {
+  position: relative;
+  margin-top: 18px;
+  padding: 19px 16px 16px;
+  border: 1px solid rgba(47, 111, 70, 0.11);
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.86);
+  box-shadow: 0 12px 30px rgba(30, 70, 43, 0.08);
+}
+
+.public-site-section::before,
+.public-site-contact::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 7px;
+  border-radius: 24px 0 0 24px;
+  background: linear-gradient(180deg, #2f6f46, #c8a23a);
+}
+
+.public-site-section-title {
+  margin-bottom: 12px;
+  padding-left: 2px;
+}
+
+.public-site-section-title h2 {
+  margin: 5px 0 0;
+  color: #172a1f;
+  font-size: 1.42rem;
+  line-height: 1.13;
+  letter-spacing: -0.02em;
+}
+
+.public-site-subsection {
+  margin-top: 18px;
+}
+
+.public-site-subsection:first-of-type {
+  margin-top: 0;
+}
+
+.public-site-subsection h3 {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 2px 0 10px;
+  color: #314338;
+  font-size: 1.05rem;
+}
+
+.public-site-subsection h3::before {
+  content: "";
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  background: #c8a23a;
+}
+
+.public-site-list {
+  display: grid;
+  gap: 12px;
+}
+
+.public-site-item {
+  position: relative;
+  overflow: hidden;
+  padding: 15px 14px 14px;
+  border: 1px solid rgba(47, 111, 70, 0.1);
+  border-radius: 19px;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(247, 252, 248, 0.96)),
+    #ffffff;
+}
+
+.public-site-item::after {
+  content: "";
+  position: absolute;
+  right: -22px;
+  top: -24px;
+  width: 76px;
+  height: 76px;
+  border-radius: 999px;
+  background: rgba(200, 162, 58, 0.14);
+}
+
+.public-site-item-type {
+  position: relative;
+  z-index: 1;
+  margin: 0 0 6px;
+}
+
+.public-site-item h3 {
+  position: relative;
+  z-index: 1;
+  margin: 0;
+  color: #17271e;
+  font-size: 1.12rem;
+  line-height: 1.23;
+  letter-spacing: -0.01em;
+}
+
+.public-site-item p {
+  position: relative;
+  z-index: 1;
+  margin: 8px 0 0;
+  color: #43544a;
+}
+
+.public-site-item-meta {
+  color: #68766e !important;
+  font-size: 0.93rem;
+  font-weight: 800;
+}
+
+.public-site-text-link {
+  position: relative;
+  z-index: 1;
+  display: inline-block;
+  margin-top: 9px;
+  color: #22603d;
+  font-size: 0.96rem;
+}
+
+.public-site-link-grid {
+  display: grid;
+  gap: 10px;
+}
+
+.public-site-link-grid a {
+  position: relative;
+  display: grid;
+  gap: 4px;
+  padding: 13px 14px 13px 16px;
+  overflow: hidden;
+  border: 1px solid rgba(47, 111, 70, 0.11);
+  border-left: 4px solid rgba(200, 162, 58, 0.95);
+  border-radius: 16px;
+  background: rgba(247, 252, 248, 0.86);
+  color: #1d3526;
+  text-decoration: none;
+}
+
+.public-site-link-grid a::after {
+  content: "↗";
+  position: absolute;
+  right: 13px;
+  top: 12px;
+  color: rgba(47, 111, 70, 0.55);
+  font-size: 0.9rem;
+  font-weight: 900;
+}
+
+.public-site-link-grid strong {
+  padding-right: 24px;
+  color: #1d4f32;
+  font-size: 1rem;
+  line-height: 1.25;
+}
+
+.public-site-link-grid span {
+  padding-right: 20px;
+  color: #5b6b60;
+  font-size: 0.92rem;
+  font-weight: 650;
+  line-height: 1.38;
+}
+
+.public-site-contact-plain {
+  margin-top: 18px;
+}
+
+.public-site-contact dl {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+}
+
+.public-site-contact div {
+  padding: 13px 13px 12px;
+  border: 1px solid rgba(47, 111, 70, 0.1);
+  border-radius: 18px;
+  background: rgba(247, 252, 248, 0.9);
+}
+
+.public-site-contact dt {
+  margin-bottom: 5px;
+}
+
+.public-site-contact dd {
+  margin: 0;
+  color: #25362b;
+  font-weight: 750;
+  overflow-wrap: anywhere;
+}
+
+.public-site-footer {
+  padding: 18px 16px 30px;
+  color: #607067;
+  text-align: center;
+}
+
+.public-site-footer p {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+@media (min-width: 720px) {
+  .public-site-header-inner,
+  .public-site-main {
+    padding-left: 28px;
+    padding-right: 28px;
+  }
+
+  .public-site-main {
+    padding-top: 28px;
+  }
+
+  .public-site-hero {
+    gap: 20px;
+    margin-bottom: 30px;
+  }
+
+  .public-site-hero-copy {
+    padding-left: 6px;
+  }
+
+  .public-site-union-message {
+    gap: 16px;
+    padding: 22px 22px;
+    border-radius: 30px;
+  }
+
+  .public-site-section,
+  .public-site-contact {
+    margin-top: 24px;
+    padding: 24px 24px 22px;
+    border-radius: 30px;
+  }
+
+  .public-site-section-title h2 {
+    font-size: 1.72rem;
+  }
+
+  .public-site-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .public-site-contact dl,
+  .public-site-link-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 980px) {
+  .public-site-hero {
+    grid-template-columns: minmax(0, 1.05fr) minmax(320px, 0.95fr);
+    align-items: center;
+  }
+
+  .public-site-banner-card {
+    order: 2;
+  }
+
+  .public-site-hero-copy {
+    order: 1;
+  }
+
+  .public-site-list {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  #destaques .public-site-list {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .public-site-link-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 420px) {
+  .public-site-logo {
+    width: 190px;
+  }
+
+  .public-site-main {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  .public-site-union-message {
+    grid-template-columns: 1fr;
+    gap: 10px;
+    border-radius: 22px;
+    padding: 16px 14px;
+  }
+
+  .public-site-union-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 16px;
+    font-size: 2.8rem;
+  }
+
+  .public-site-section,
+  .public-site-contact {
+    border-radius: 22px;
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+
+  .public-site-item,
+  .public-site-contact div {
+    border-radius: 17px;
+  }
+}
+
+
+@media (max-width: 420px) {
+  .public-site-banner-card {
+    border-radius: 24px;
+  }
+
+  .public-site-banner-caption {
+    font-size: clamp(0.92rem, 5vw, 1.18rem);
+    line-height: 1.12;
+  }
 }

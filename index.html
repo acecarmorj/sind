@@ -3,16 +3,18 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ACEAP | Sistema Administrativo</title>
+  <title>SINSERMAP | Cadastro de Associados</title>
   <meta name="theme-color" content="#2f6f46" />
   <link rel="stylesheet" href="./assets/styles.css" />
 </head>
 <body>
   <div id="loginScreen" class="screen-screen">
     <div class="card login-card">
-      <img class="login-logo" src="./assets/aceap-logo.png" alt="ACEAP" />
-      <div class="brand-badge">ACEAP • sistema interno</div>
-      <h1>Sistema Administrativo ACEAP</h1>
+      <img class="login-logo" src="./assets/sinsermap-logo.svg" alt="SINSERMAP" />
+      <div class="brand-badge">SINSERMAP • cadastro de associados</div>
+      <h1>Cadastro de Associados</h1>
+      <p class="muted">Acesso interno para cadastrar, consultar e emitir relatórios de associados.</p>
+
       <form id="loginForm" class="grid">
         <label>
           Usuário
@@ -21,10 +23,13 @@
 
         <label>
           Senha
-          <input id="loginPassword" type="password" autocomplete="current-password" />
+          <input id="loginPassword" type="password" autocomplete="current-password" value="123456" />
         </label>
 
-        <button class="btn btn-primary" type="submit">Entrar</button>
+        <div class="actions">
+          <button class="btn btn-primary" type="submit">Entrar</button>
+          <a class="btn btn-secondary" href="./painel.html">Abrir painel público</a>
+        </div>
         <p id="loginMessage" class="message"></p>
       </form>
     </div>
@@ -33,17 +38,18 @@
   <div id="appScreen" class="hidden">
     <header class="topbar">
       <div class="brand-lockup">
-        <div class="brand-mark"><img src="./assets/aceap-logo.png" alt="ACEAP" /></div>
+        <div class="brand-mark"><img src="./assets/sinsermap-logo.svg" alt="SINSERMAP" /></div>
         <div>
-          <h1>ACEAP | Sistema Administrativo</h1>
+          <h1>SINSERMAP | Cadastro de Associados</h1>
           <p id="unionName" class="muted">Carregando...</p>
         </div>
       </div>
+
       <div class="session-panel">
         <p class="muted small" id="buildInfo"></p>
         <div class="actions system-actions">
-          <button id="privacyToggleBtn" class="btn btn-secondary privacy-toggle" type="button" aria-pressed="true">Privacidade ativa</button>
-          <button id="refreshBtn" class="btn btn-secondary" type="button">Atualizar sistema</button>
+          <button id="refreshBtn" class="btn btn-secondary" type="button">Atualizar</button>
+          <a class="btn btn-secondary" href="./painel.html" target="_blank" rel="noopener noreferrer">Painel público</a>
           <button id="logoutBtn" class="btn btn-secondary" type="button">Sair</button>
         </div>
       </div>
@@ -51,2132 +57,766 @@
 
     <main class="page">
       <p id="globalMessage" class="message"></p>
+
+      <section class="overview-strip">
+        <div class="overview-copy">
+          <span class="eyebrow">Sistema interno</span>
+          <h2>Cadastro, consulta e relatórios de associados</h2>
+          <p id="managementPhrase" class="muted">Controle os dados dos associados por local de trabalho, setor e função.</p>
+        </div>
+      </section>
+
       <nav class="tabs desktop-tabs" aria-label="Navegação principal">
-        <button class="tab-btn active" data-tab="inicio" data-section="inicio" type="button">Início</button>
-        <button class="tab-btn" data-tab="cadastro" data-section="associados" data-permission="members.read" type="button">Associados</button>
-        <button class="tab-btn" data-tab="caixa" data-section="financeiro" data-permission="cash.read" type="button">Financeiro</button>
-        <button class="tab-btn" data-tab="documentos" data-section="documentos" data-permission="documents.read" type="button">Documentos</button>
-        <button class="tab-btn" data-tab="eventos" data-section="eventos" data-permission="events.read" type="button">Eventos</button>
-        <button class="tab-btn" data-tab="avisos" data-section="avisos" data-permission="announcements.read" type="button">Avisos</button>
-        <button class="tab-btn" data-tab="catalogo" data-section="catalogo" data-permission="catalog.read" type="button">Catálogo</button>
-        <button class="tab-btn" data-tab="protocolos" data-section="protocolos" data-permission="requests.read" type="button">Protocolos</button>
-        <button class="tab-btn" data-tab="relatorios" data-section="relatorios" data-permission="reports.read" type="button">Relatórios</button>
-        <button class="tab-btn" data-tab="usuarios" data-section="usuarios" data-permission="users.manage" type="button">Usuários</button>
-        <button class="tab-btn" data-tab="auditoria" data-section="auditoria" data-permission="audit.read" type="button">Auditoria</button>
+        <button class="tab-btn active" data-tab="inicio" type="button">Início</button>
+        <button class="tab-btn" data-tab="cadastro" type="button">Cadastrar Associado</button>
+        <button class="tab-btn" data-tab="consulta" type="button">Consultar</button>
+        <button class="tab-btn" data-tab="listas" type="button">Configuração</button>
+        <button class="tab-btn" data-tab="relatorios" type="button">Relatórios</button>
       </nav>
 
-      <div class="quick-actions-bar erp-toolbar" aria-label="Ações da tela atual">
-        <div class="quick-actions-title">
-          <span id="quickActionsLabel" class="quick-actions-label">Atalhos de início</span>
-          <span id="currentBreadcrumb" class="current-breadcrumb">Você está em: Início</span>
-        </div>
-
-        <div class="action-cluster" data-action-screen="inicio">
-          <span class="action-cluster-label">Rotina principal</span>
-          <button class="quick-action-btn" data-go-tab="cadastro" data-action-screen="inicio" data-focus="memberNome" data-permission="members.write" type="button">＋ Cadastrar associado</button>
-          <button class="quick-action-btn" data-go-tab="mensalidades" data-action-screen="inicio" data-focus="paymentTarget" data-permission="dues.pay" type="button">✓ Receber mensalidade</button>
-          <button class="quick-action-btn" data-go-tab="despesas" data-action-screen="inicio" data-action="quick-expense" data-focus="quickExpenseDescricao" data-permission="cash.close" type="button">− Lançar despesa</button>
-          <button class="quick-action-btn" data-go-tab="documentos" data-action-screen="inicio" data-focus="documentMemberId" data-permission="documents.issue" type="button">▣ Emitir documento</button>
-        </div>
-
-        <div class="action-cluster" data-action-screen="cadastro">
-          <span class="action-cluster-label">Cadastro</span>
-          <button class="quick-action-btn" data-go-tab="cadastro" data-action-screen="cadastro" data-focus="memberNome" data-permission="members.write" type="button">＋ Novo associado</button>
-          <button class="quick-action-btn" data-go-tab="cadastro" data-action-screen="cadastro" data-focus="memberSearch" data-permission="members.read" type="button">⌕ Consultar associado</button>
-          <button class="quick-action-btn" data-go-tab="historico" data-action-screen="cadastro" data-focus="historyMemberId" data-permission="members.read" type="button">◷ Ver histórico</button>
-          <button class="quick-action-btn" data-go-tab="mensalidades" data-action-screen="cadastro" data-focus="duesSearch" data-permission="dues.read" type="button">▥ Ver mensalidades</button>
-        </div>
-
-        <div class="action-cluster" data-action-screen="historico">
-          <span class="action-cluster-label">Histórico</span>
-          <button class="quick-action-btn" data-go-tab="historico" data-action-screen="historico" data-focus="historyMemberId" data-permission="members.read" type="button">⌕ Selecionar associado</button>
-          <button class="quick-action-btn" data-go-tab="historico" data-action-screen="historico" data-focus="attachmentDescricao" data-permission="attachments.write" type="button">＋ Anexar registro</button>
-          <button class="quick-action-btn" data-go-tab="mensalidades" data-action-screen="historico" data-focus="paymentTarget" data-permission="dues.pay" type="button">✓ Receber mensalidade</button>
-          <button class="quick-action-btn" data-go-tab="cadastro" data-action-screen="historico" data-focus="memberSearch" data-permission="members.read" type="button">↩ Voltar ao cadastro</button>
-        </div>
-
-        <div class="action-cluster" data-action-screen="mensalidades">
-          <span class="action-cluster-label">Mensalidades</span>
-          <button class="quick-action-btn" data-go-tab="mensalidades" data-action-screen="mensalidades" data-focus="batchCompetencia" data-permission="dues.generate" type="button">＋ Gerar mensalidades</button>
-          <button class="quick-action-btn" data-go-tab="mensalidades" data-action-screen="mensalidades" data-focus="paymentTarget" data-permission="dues.pay" type="button">✓ Receber mensalidade</button>
-          <button class="quick-action-btn" data-go-tab="mensalidades" data-action-screen="mensalidades" data-focus="duesSearch" data-permission="dues.read" type="button">⌕ Consultar títulos</button>
-          <button class="quick-action-btn" data-go-tab="cadastro" data-action-screen="mensalidades" data-focus="memberSearch" data-permission="members.read" type="button">↩ Cadastro do associado</button>
-        </div>
-
-        <div class="action-cluster" data-action-screen="caixa">
-          <span class="action-cluster-label">Caixa</span>
-          <button class="quick-action-btn" data-go-tab="caixa" data-action-screen="caixa" data-focus="cashTipo" data-permission="cash.read" type="button">▦ Conferir caixa</button>
-          <button class="quick-action-btn" data-go-tab="despesas" data-action-screen="caixa" data-action="cash-income" data-focus="cashMovementDescricao" data-permission="cash.close" type="button">＋ Registrar entrada</button>
-          <button class="quick-action-btn" data-go-tab="despesas" data-action-screen="caixa" data-action="quick-expense" data-focus="quickExpenseDescricao" data-permission="cash.close" type="button">− Lançar despesa</button>
-          <button class="quick-action-btn" data-go-tab="contas-pagar" data-action-screen="caixa" data-action="payables" data-focus="payableDescricao" data-permission="cash.read" type="button">□ Contas a pagar</button>
-          <button class="quick-action-btn" data-go-tab="caixa" data-action-screen="caixa" data-focus="cashObservacoes" data-permission="cash.close" type="button">▣ Fechar caixa</button>
-        </div>
-
-        <div class="action-cluster" data-action-screen="despesas">
-          <span class="action-cluster-label">Movimentos</span>
-          <button class="quick-action-btn" data-go-tab="despesas" data-action-screen="despesas" data-action="quick-expense" data-focus="quickExpenseDescricao" data-permission="cash.close" type="button">− Despesa rápida</button>
-          <button class="quick-action-btn" data-go-tab="despesas" data-action-screen="despesas" data-action="cash-expense" data-focus="cashMovementDescricao" data-permission="cash.close" type="button">▤ Despesa detalhada</button>
-          <button class="quick-action-btn" data-go-tab="despesas" data-action-screen="despesas" data-action="cash-income" data-focus="cashMovementDescricao" data-permission="cash.close" type="button">＋ Entrada avulsa</button>
-          <button class="quick-action-btn" data-go-tab="caixa" data-action-screen="despesas" data-focus="cashTipo" data-permission="cash.read" type="button">↩ Voltar ao caixa</button>
-        </div>
-
-        <div class="action-cluster" data-action-screen="contas-pagar">
-          <span class="action-cluster-label">Contas a pagar</span>
-          <button class="quick-action-btn" data-go-tab="contas-pagar" data-action-screen="contas-pagar" data-action="payables" data-focus="payableDescricao" data-permission="cash.close" type="button">＋ Nova conta</button>
-          <button class="quick-action-btn" data-go-tab="contas-pagar" data-action-screen="contas-pagar" data-action="payables" data-focus="payablesStatusFilter" data-permission="cash.read" type="button">⌕ Consultar contas</button>
-          <button class="quick-action-btn" data-go-tab="despesas" data-action-screen="contas-pagar" data-action="quick-expense" data-focus="quickExpenseDescricao" data-permission="cash.close" type="button">− Lançar despesa não prevista</button>
-          <button class="quick-action-btn" data-go-tab="caixa" data-action-screen="contas-pagar" data-focus="cashTipo" data-permission="cash.read" type="button">↩ Voltar ao caixa</button>
-        </div>
-
-        <div class="action-cluster" data-action-screen="documentos">
-          <span class="action-cluster-label">Documentos</span>
-          <button class="quick-action-btn" data-go-tab="documentos" data-action-screen="documentos" data-focus="documentMemberId" data-permission="documents.issue" type="button">＋ Emitir documento</button>
-          <button class="quick-action-btn" data-go-tab="documentos" data-action-screen="documentos" data-focus="documentsSearch" data-permission="documents.read" type="button">⌕ Consultar documentos</button>
-          <button class="quick-action-btn" data-go-tab="cadastro" data-action-screen="documentos" data-focus="memberSearch" data-permission="members.read" type="button">↩ Cadastro do associado</button>
-        </div>
-
-        <div class="action-cluster" data-action-screen="relatorios">
-          <span class="action-cluster-label">Relatórios</span>
-          <button class="quick-action-btn" data-go-tab="relatorios" data-action-screen="relatorios" data-focus="financialSearch" data-permission="reports.read" type="button">▤ Associados</button>
-          <button class="quick-action-btn" data-go-tab="relatorios" data-action-screen="relatorios" data-focus="financialStatusFilter" data-permission="reports.read" type="button">▥ Mensalidades</button>
-          <button class="quick-action-btn" data-go-tab="relatorios" data-action-screen="relatorios" data-action="cash-monthly-report" data-focus="cashMonthlyReportCompetencia" data-permission="cash.read" type="button">▦ Caixa mensal</button>
-          <button class="quick-action-btn" data-go-tab="relatorios" data-action-screen="relatorios" data-focus="financialSearch" data-permission="documents.read" type="button">▣ Documentos</button>
-        </div>
-
-        <div class="action-cluster" data-action-screen="eventos">
-          <span class="action-cluster-label">Eventos</span>
-          <button class="quick-action-btn" data-go-tab="eventos" data-action-screen="eventos" data-focus="eventTitle" data-permission="events.manage" type="button">＋ Novo evento</button>
-          <button class="quick-action-btn" data-go-tab="eventos" data-action-screen="eventos" data-focus="eventDateFilter" data-permission="events.read" type="button">▣ Calendário</button>
-        </div>
-
-        <div class="action-cluster" data-action-screen="avisos">
-          <span class="action-cluster-label">Avisos</span>
-          <button class="quick-action-btn" data-go-tab="avisos" data-action-screen="avisos" data-focus="announcementTitle" data-permission="announcements.manage" type="button">＋ Novo aviso</button>
-          <button class="quick-action-btn" data-go-tab="avisos" data-action-screen="avisos" data-focus="announcementStatusFilter" data-permission="announcements.read" type="button">▤ Quadro de avisos</button>
-        </div>
-
-        <div class="action-cluster" data-action-screen="usuarios">
-          <span class="action-cluster-label">Usuários</span>
-          <button class="quick-action-btn" data-go-tab="usuarios" data-action-screen="usuarios" data-focus="userNome" data-permission="users.manage" type="button">＋ Novo usuário</button>
-          <button class="quick-action-btn" data-go-tab="usuarios" data-action-screen="usuarios" data-focus="usersTableBody" data-permission="users.manage" type="button">⌕ Consultar usuários</button>
-        </div>
-
-        <div class="action-cluster" data-action-screen="auditoria">
-          <span class="action-cluster-label">Auditoria</span>
-          <button class="quick-action-btn" data-go-tab="auditoria" data-action-screen="auditoria" data-permission="audit.read" type="button">▤ Consultar auditoria</button>
-        </div>
-      </div>
-
-      <p id="cashMessage" class="message"></p>
-
-      <section class="tab-panel active" id="tab-inicio">
-        <div class="workspace-grid erp-home-grid">
-          <div class="card workspace-card command-center">
+      <section id="tab-inicio" class="tab-panel active">
+        <div class="layout-two">
+          <section class="card">
             <div class="section-head">
               <div>
-                <span class="eyebrow">Central de trabalho</span>
-                <h2>Rotinas administrativas</h2>
-                <p class="muted small">Acesso direto às operações mais usadas pela secretaria e pela chefia.</p>
+                <h2>Últimos associados cadastrados</h2>
+                <p class="muted">Cadastros criados ou atualizados recentemente.</p>
               </div>
+              <button class="btn btn-primary" type="button" data-open-tab="cadastro">Novo associado</button>
             </div>
 
-            <div class="shortcut-grid module-shortcuts">
-              <button class="shortcut-tile" data-go-tab="cadastro" data-focus="memberSearch" data-permission="members.read" type="button">
-                <strong>Associados</strong>
-                <span>Cadastro, consulta, histórico, mensalidades e recebimentos.</span>
-              </button>
-              <button class="shortcut-tile" data-go-tab="caixa" data-focus="cashTipo" data-permission="cash.read" type="button">
-                <strong>Financeiro</strong>
-                <span>Caixa, entradas, despesas, contas a pagar e fechamento.</span>
-              </button>
-              <button class="shortcut-tile" data-go-tab="documentos" data-focus="documentMemberId" data-permission="documents.read" type="button">
-                <strong>Documentos</strong>
-                <span>Emissão e consulta de documentos administrativos.</span>
-              </button>
-              <button class="shortcut-tile" data-go-tab="relatorios" data-focus="financialSearch" data-permission="reports.read" type="button">
-                <strong>Relatórios</strong>
-                <span>Consultas consolidadas por área, período e situação.</span>
-              </button>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Nome</th>
+                    <th>Local de trabalho</th>
+                    <th>Setor</th>
+                    <th>Função</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody id="recentMembersBody">
+                  <tr><td colspan="5">Carregando...</td></tr>
+                </tbody>
+              </table>
             </div>
-          </div>
+          </section>
 
-          <aside class="card pending-card">
+          <section class="card">
             <div class="section-head">
               <div>
-                <span class="eyebrow">Pendências do dia</span>
-                <h2>Atenção operacional</h2>
-                <p class="muted small">Avisos sem exposição de valores financeiros na tela inicial.</p>
+                <h2>Consulta rápida</h2>
+                <p class="muted">Pesquise pelo nome, CPF, local, setor ou função.</p>
               </div>
             </div>
 
-            <div id="payableMonthAlert" class="payable-alert-box hidden" data-permission="cash.read">
-              <div>
-                <span class="eyebrow">Contas a pagar</span>
-                <p id="payableMonthAlertText" class="muted small">Nenhuma despesa fixa pendente para este mês.</p>
-              </div>
-              <button class="btn btn-secondary" data-go-tab="contas-pagar" data-action="payables" data-focus="payableDescricao" type="button">Ver contas</button>
-            </div>
+            <form id="quickSearchForm" class="grid">
+              <label>
+                Buscar
+                <input id="quickSearchText" placeholder="Ex.: Maria, escola, motorista, professor..." />
+              </label>
+              <button class="btn btn-secondary" type="submit">Consultar associados</button>
+            </form>
 
-            <div class="routine-note">
-              <span class="eyebrow">Conferência interna</span>
-              <p id="managementPhrase" class="muted small" aria-live="polite">Dados atualizados reduzem divergências entre secretaria, financeiro e chefia.</p>
-            </div>
-
-            <div class="privacy-note">
-              <strong>Privacidade global</strong>
-              <span>Quando ativada, valores e dados sensíveis ficam ocultos para atendimento com terceiros por perto.</span>
-            </div>
-          </aside>
-
-          <section class="stats-privacy-card" aria-label="Resumo administrativo reservado">
-            <div class="stats-privacy-head">
-              <div>
-                <span class="eyebrow">Resumo reservado</span>
-                <h2>Indicadores internos</h2>
-                <p class="muted small">Dados ocultos por padrão. Use apenas quando a tela estiver protegida.</p>
-              </div>
-              <button id="toggleStatsBtn" class="btn btn-secondary" type="button" aria-pressed="false">Exibir valores</button>
-            </div>
-
-            <div class="stats-grid confidential-grid">
-              <article class="stat-card is-masked">
-                <div class="stat-label">Cadastros ativos</div>
-                <div id="statMembers" class="stat-value privacy-sensitive">••••</div>
-              </article>
-              <article class="stat-card is-masked">
-                <div class="stat-label">Títulos do mês</div>
-                <div id="statDues" class="stat-value privacy-sensitive">••••</div>
-              </article>
-              <article class="stat-card is-masked">
-                <div class="stat-label">Recebido no mês</div>
-                <div id="statPaid" class="stat-value money-value privacy-sensitive">••••</div>
-              </article>
-              <article class="stat-card is-masked">
-                <div class="stat-label">Valor em atraso</div>
-                <div id="statLate" class="stat-value money-value privacy-sensitive">••••</div>
-              </article>
+            <div id="quickResult" class="member-detail-card mt-16">
+              <p class="muted">Use a consulta rápida para localizar cadastros sem abrir outros módulos.</p>
             </div>
           </section>
         </div>
       </section>
 
-      <section class="tab-panel" id="tab-cadastro">
-        <div class="module-context-card member-context-card">
-          <div>
-            <span class="eyebrow">Módulo associados</span>
-            <strong>Cadastro, mensalidades e histórico</strong>
-            <p class="muted small">Use esta área para cadastrar, consultar, acompanhar histórico e receber mensalidades do associado.</p>
-          </div>
-          <div class="module-subnav" aria-label="Subáreas de associados">
-            <button class="module-link" data-go-tab="cadastro" data-focus="memberSearch" data-permission="members.read" type="button">Cadastros</button>
-            <button class="module-link" data-go-tab="historico" data-focus="historyMemberId" data-permission="members.read" type="button">Histórico</button>
-            <button class="module-link" data-go-tab="mensalidades" data-focus="duesSearch" data-permission="dues.read" type="button">Mensalidades</button>
-          </div>
-        </div>
-
-        <div class="module-command-strip member-command-strip">
-          <div>
-            <strong>Fluxo recomendado</strong>
-            <span>1. Cadastrar ou localizar associado</span>
-            <span>2. Conferir histórico</span>
-            <span>3. Gerar ou baixar mensalidade</span>
-          </div>
-          <div class="command-strip-actions">
-            <span class="muted small">Use a barra de ações superior para executar a rotina da tela atual.</span>
-          </div>
-        </div>
-
-        <div class="layout-two member-work-layout">
-          <div class="card" data-permission="members.write">
-            <div class="section-head">
-              <h2 id="memberFormTitle">Cadastro do associado</h2>
-              <button id="cancelMemberEditBtn" class="btn btn-secondary hidden" type="button">Cancelar edição</button>
-            </div>
-
-            <form id="memberForm" class="grid form-window">
-              <input id="memberId" type="hidden" />
-
-              <div class="form-section-title">Dados cadastrais</div>
-              <div class="grid cols-3">
-                <label>
-                  Nome completo
-                  <input id="memberNome" required />
-                </label>
-                <label>
-                  CPF
-                  <input id="memberCpf" required maxlength="14" inputmode="numeric" />
-                </label>
-                <label>
-                  RG
-                  <input id="memberRg" />
-                </label>
-              </div>
-
-              <div class="grid cols-3">
-                <label>
-                  Data de nascimento
-                  <input id="memberNascimento" type="date" />
-                </label>
-                <label>
-                  E-mail
-                  <input id="memberEmail" type="email" />
-                </label>
-                <label>
-                  Telefone
-                  <input id="memberTelefone" maxlength="15" inputmode="numeric" />
-                </label>
-              </div>
-
-              <div class="form-section-title">Endereço</div>
-              <div class="grid cols-3">
-                <label>
-                  Endereço
-                  <input id="memberEndereco" />
-                </label>
-                <label>
-                  Bairro
-                  <input id="memberBairro" />
-                </label>
-                <label>
-                  CEP
-                  <input id="memberCep" maxlength="9" inputmode="numeric" />
-                </label>
-              </div>
-
-              <div class="grid cols-2">
-                <label>
-                  Cidade
-                  <input id="memberCidade" value="Além Paraíba" />
-                </label>
-                <label>
-                  UF
-                  <input id="memberUf" value="MG" maxlength="2" />
-                </label>
-              </div>
-
-              <div class="form-section-title">Dados comerciais e vínculo</div>
-              <div class="grid cols-3">
-                <label>
-                  Empresa
-                  <input id="memberEmpresa" />
-                </label>
-                <label>
-                  Cargo
-                  <input id="memberCargo" />
-                </label>
-                <label>
-                  Data de admissão
-                  <input id="memberAdmissao" type="date" />
-                </label>
-                <label>
-                  Data de filiação
-                  <input id="memberFiliacao" type="date" />
-                </label>
-              </div>
-
-              <div class="grid cols-2">
-                <label>
-                  Status
-                  <select id="memberStatus">
-                    <option value="ATIVO">ATIVO</option>
-                    <option value="PENDENTE">PENDENTE</option>
-                    <option value="INATIVO">INATIVO</option>
-                  </select>
-                </label>
-
-                <label>
-                  Observações
-                  <textarea id="memberObservacoes"></textarea>
-                </label>
-              </div>
-
-              <div class="actions form-action-bar">
-                <button class="btn btn-primary" type="submit">Salvar associado</button>
-              </div>
-
-              <p id="memberMessage" class="message"></p>
-            </form>
-          </div>
-
-          <div class="card">
-            <div class="section-head">
-              <h2>Associados</h2>
-              <div class="actions form-action-bar">
-                <button id="membersExportBtn" class="btn btn-secondary" data-permission="members.read" type="button">Exportar cadastros</button>
-              </div>
-            </div>
-
-            <div class="toolbar compact sticky-filter">
-              <label class="grow">
-                Consulta rápida
-                <input id="memberSearch" placeholder="Buscar por nome, CPF, empresa, telefone ou status" />
-              </label>
-              <label>
-                Situação
-                <select id="memberStatusFilter">
-                  <option value="">Todos os status</option>
-                  <option value="ATIVO">Ativos</option>
-                  <option value="PENDENTE">Pendentes</option>
-                  <option value="INATIVO">Inativos</option>
-                </select>
-              </label>
-            </div>
-            <div class="table-helper-line">
-              <span>Duplo uso: consulte pela tabela ou selecione “Histórico” para abrir a ficha completa.</span>
-              <span class="status-legend"><b>Ativo</b> cadastro regular · <b>Pendente</b> requer conferência · <b>Inativo</b> sem movimento</span>
-            </div>
-
-            <div class="table-wrap mt-16 members-table-wrap">
-              <table class="members-table">
-                <colgroup>
-                  <col class="col-member-name" />
-                  <col class="col-member-cpf" />
-                  <col class="col-member-company" />
-                  <col class="col-member-phone" />
-                  <col class="col-member-status" />
-                  <col class="col-member-actions" />
-                </colgroup>
-                <thead>
-                  <tr>
-                    <th>Nome</th>
-                    <th>CPF</th>
-                    <th>Empresa</th>
-                    <th>Telefone</th>
-                    <th>Status</th>
-                    <th>Ações</th>
-                  </tr>
-                </thead>
-                <tbody id="membersTableBody"></tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section class="tab-panel" id="tab-historico" data-permission="members.read">
-        <div class="module-context-card member-context-card">
-          <div>
-            <span class="eyebrow">Módulo associados</span>
-            <strong>Histórico do associado</strong>
-            <p class="muted small">Consulta de cadastro, mensalidades, documentos, anexos e auditoria relacionada.</p>
-          </div>
-          <div class="module-subnav" aria-label="Subáreas de associados">
-            <button class="module-link" data-go-tab="cadastro" data-focus="memberSearch" data-permission="members.read" type="button">Cadastros</button>
-            <button class="module-link" data-go-tab="historico" data-focus="historyMemberId" data-permission="members.read" type="button">Histórico</button>
-            <button class="module-link" data-go-tab="mensalidades" data-focus="duesSearch" data-permission="dues.read" type="button">Mensalidades</button>
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="section-head">
-            <h2>Histórico do associado</h2>
-            <button id="historyRefreshBtn" class="btn btn-secondary" type="button">Atualizar histórico</button>
-          </div>
-
-          <div class="toolbar compact">
-            <label class="grow">
-              Associado
-              <select id="historyMemberId"></select>
-            </label>
-          </div>
-
-          <p id="historyMessage" class="message"></p>
-        </div>
-
-        <section class="stats-grid mt-16">
-          <article class="stat-card">
-            <div class="stat-label">Total lançado</div>
-            <div id="historyTotalLancado" class="stat-value">R$ 0,00</div>
-          </article>
-          <article class="stat-card">
-            <div class="stat-label">Total pago</div>
-            <div id="historyTotalPago" class="stat-value">R$ 0,00</div>
-          </article>
-          <article class="stat-card">
-            <div class="stat-label">Em aberto/atraso</div>
-            <div id="historyPendente" class="stat-value">R$ 0,00</div>
-          </article>
-          <article class="stat-card">
-            <div class="stat-label">Documentos emitidos</div>
-            <div id="historyDocumentos" class="stat-value">0</div>
-          </article>
-          <article class="stat-card">
-            <div class="stat-label">Anexos cadastrados</div>
-            <div id="historyAnexos" class="stat-value">0</div>
-          </article>
-        </section>
-
-        <div class="layout-two mt-16">
-          <div class="card">
-            <div class="section-head">
-              <h2>Dados cadastrais</h2>
-            </div>
-            <div id="historyMemberCard" class="grid"></div>
-          </div>
-
-          <div class="card">
-            <div class="section-head">
-              <h2>Resumo financeiro</h2>
-            </div>
-            <div id="historyFinanceCard" class="grid"></div>
-          </div>
-        </div>
-
-        <div class="card mt-16">
-          <div class="section-head">
-            <h2>Mensalidades do associado</h2>
-          </div>
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Competência</th>
-                  <th>Valor</th>
-                  <th>Vencimento</th>
-                  <th>Pago em</th>
-                  <th>Forma</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-              <tbody id="historyDuesTableBody"></tbody>
-            </table>
-          </div>
-        </div>
-
-        <div class="card mt-16" data-permission="attachments.read">
-          <div class="section-head">
-            <h2>Anexos do associado</h2>
-          </div>
-
-          <form id="attachmentForm" class="grid form-window" data-permission="attachments.write">
-            <div class="form-section-title">Anexo do associado</div>
-            <div class="grid cols-3">
-              <label>
-                Tipo
-                <select id="attachmentTipo">
-                  <option value="DOCUMENTO">Documento</option>
-                  <option value="RG_CPF">RG/CPF</option>
-                  <option value="COMPROVANTE">Comprovante</option>
-                  <option value="CONTRATO">Contrato</option>
-                  <option value="OUTRO">Outro</option>
-                </select>
-              </label>
-              <label>
-                Descrição
-                <input id="attachmentDescricao" maxlength="240" placeholder="Ex.: comprovante de endereço" />
-              </label>
-              <label>
-                Arquivo
-                <input id="attachmentFile" type="file" />
-              </label>
-            </div>
-
-            <div class="actions form-action-bar">
-              <button class="btn btn-primary" type="submit">Salvar anexo</button>
-            </div>
-            <p id="attachmentMessage" class="message"></p>
-          </form>
-
-          <div class="table-wrap mt-16">
-            <table>
-              <thead>
-                <tr>
-                  <th>Arquivo</th>
-                  <th>Tipo</th>
-                  <th>Descrição</th>
-                  <th>Tamanho</th>
-                  <th>Cadastro</th>
-                  <th>Ações</th>
-                </tr>
-              </thead>
-              <tbody id="historyAttachmentsTableBody"></tbody>
-            </table>
-          </div>
-        </div>
-
-        <div class="layout-two mt-16">
-          <div class="card">
-            <div class="section-head">
-              <h2>Documentos emitidos</h2>
-            </div>
-            <div class="table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Número</th>
-                    <th>Tipo</th>
-                    <th>Competência</th>
-                    <th>Emissão</th>
-                  </tr>
-                </thead>
-                <tbody id="historyDocumentsTableBody"></tbody>
-              </table>
-            </div>
-          </div>
-
-          <div class="card" data-permission="audit.read">
-            <div class="section-head">
-              <h2>Auditoria relacionada</h2>
-            </div>
-            <div class="table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Data</th>
-                    <th>Usuário</th>
-                    <th>Ação</th>
-                    <th>Detalhes</th>
-                  </tr>
-                </thead>
-                <tbody id="historyAuditTableBody"></tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section class="tab-panel" id="tab-mensalidades">
-        <div class="module-context-card member-context-card">
-          <div>
-            <span class="eyebrow">Módulo associados</span>
-            <strong>Mensalidades dos associados</strong>
-            <p class="muted small">Gere cobranças, filtre pendências e registre recebimentos sem sair do módulo de associados.</p>
-          </div>
-          <div class="module-subnav" aria-label="Subáreas de associados">
-            <button class="module-link" data-go-tab="cadastro" data-focus="memberSearch" data-permission="members.read" type="button">Cadastros</button>
-            <button class="module-link" data-go-tab="historico" data-focus="historyMemberId" data-permission="members.read" type="button">Histórico</button>
-            <button class="module-link" data-go-tab="mensalidades" data-focus="duesSearch" data-permission="dues.read" type="button">Mensalidades</button>
-          </div>
-        </div>
-
-        <div class="layout-two dues-work-layout">
-          <div class="card">
-            <div class="card-block" data-permission="dues.generate">
-              <h2>Gerar mensalidades em lote</h2>
-              <form id="batchForm" class="grid form-window mt-16">
-                <div class="form-section-title">Competência e vencimento</div>
-                <div class="grid cols-3">
-                  <label>
-                    Competência
-                    <input id="batchCompetencia" type="month" />
-                  </label>
-                  <label>
-                    Valor padrão
-                    <input id="batchValor" type="text" inputmode="decimal" />
-                  </label>
-                  <label>
-                    Vencimento
-                    <input id="batchVencimento" type="date" />
-                  </label>
-                </div>
-
-                <div class="actions form-action-bar">
-                  <button class="btn btn-primary" type="submit">Gerar mensalidades</button>
-                </div>
-
-                <p id="batchMessage" class="message"></p>
-              </form>
-            </div>
-
-            <div class="divider"></div>
-
-            <div class="card-block" data-permission="dues.pay">
-              <h2>Registrar pagamento</h2>
-              <form id="paymentForm" class="grid form-window mt-16">
-                <div class="form-section-title">Baixa de mensalidade</div>
-                <label>
-                  Mensalidade selecionada
-                  <input id="paymentTarget" disabled placeholder="Selecione na tabela abaixo" />
-                </label>
-
-                <div class="grid cols-3">
-                  <label>
-                    Pago em
-                    <input id="paymentDate" type="date" />
-                  </label>
-
-                  <label>
-                    Forma de pagamento
-                    <select id="paymentMethod">
-                      <option value="PIX">PIX</option>
-                      <option value="DINHEIRO">DINHEIRO</option>
-                      <option value="BOLETO">BOLETO</option>
-                      <option value="CARTAO">CARTAO</option>
-                      <option value="TRANSFERENCIA">TRANSFERENCIA</option>
-                      <option value="OUTRO">OUTRO</option>
-                    </select>
-                  </label>
-
-                  <label>
-                    Observações
-                    <input id="paymentNotes" />
-                  </label>
-                </div>
-
-                <div class="actions form-action-bar">
-                  <button class="btn btn-primary" type="submit">Quitar mensalidade</button>
-                  <button id="clearPaymentSelectionBtn" class="btn btn-secondary" type="button">Limpar seleção</button>
-                </div>
-
-                <p id="paymentMessage" class="message"></p>
-              </form>
-            </div>
-          </div>
-
-          <div class="card">
-            <div class="section-head">
-              <h2>Mensalidades</h2>
-              <button id="duesExportBtn" class="btn btn-secondary" type="button">Exportar mensalidades</button>
-            </div>
-
-            <div class="toolbar compact">
-              <label class="grow">
-                Competência
-                <input id="duesCompetencia" type="month" />
-              </label>
-              <label>
-                Status
-                <select id="duesStatusFilter">
-                  <option value="">Todos</option>
-                  <option value="ABERTA">ABERTA</option>
-                  <option value="PAGA">PAGA</option>
-                  <option value="ATRASADA">ATRASADA</option>
-                  <option value="CANCELADA">CANCELADA</option>
-                </select>
-              </label>
-              <label class="grow">
-                Buscar
-                <input id="duesSearch" placeholder="Nome, CPF ou forma de pagamento" />
-              </label>
-            </div>
-
-            <div class="table-wrap mt-16">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Nome</th>
-                    <th>Competência</th>
-                    <th>Valor</th>
-                    <th>Vencimento</th>
-                    <th>Pago em</th>
-                    <th>Status</th>
-                    <th>Ações</th>
-                  </tr>
-                </thead>
-                <tbody id="duesTableBody"></tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      
-      <section class="tab-panel" id="tab-catalogo">
-        <div class="layout-two">
-          <div class="card" data-permission="catalog.manage">
-            <div class="section-head">
-              <div>
-                <h2 id="catalogFormTitle">Empresa no catálogo</h2>
-                <p class="muted">Controle quais associados aparecem na vitrine pública.</p>
-              </div>
-              <button id="catalogCancelEditBtn" class="btn btn-secondary hidden" type="button">Cancelar edição</button>
-            </div>
-
-            <form id="catalogForm" class="grid">
-              <input id="catalogId" type="hidden" />
-
-              <label>
-                Associado
-                <select id="catalogMemberId"></select>
-              </label>
-
-              <label>
-                Nome público
-                <input id="catalogPublicName" placeholder="Nome que aparecerá no catálogo" />
-              </label>
-
-              <label>
-                Categoria
-                <input id="catalogCategory" placeholder="Ex.: Supermercado, Moda, Serviços" />
-              </label>
-
-              <label>
-                WhatsApp público
-                <input id="catalogWhatsapp" inputmode="tel" placeholder="(32) 99999-9999" />
-              </label>
-
-              <label>
-                Instagram
-                <input id="catalogInstagram" placeholder="@empresa" />
-              </label>
-
-              <label>
-                Endereço público
-                <input id="catalogAddress" placeholder="Rua, bairro, cidade" />
-              </label>
-
-              <label class="full">
-                Descrição
-                <textarea id="catalogDescription" rows="3" placeholder="Resumo do negócio, produtos ou serviços"></textarea>
-              </label>
-
-              <label>
-                Exibir no catálogo
-                <select id="catalogVisible">
-                  <option value="SIM">Sim</option>
-                  <option value="NAO">Não</option>
-                </select>
-              </label>
-
-              <label>
-                Destaque
-                <select id="catalogHighlight">
-                  <option value="NAO">Não</option>
-                  <option value="SIM">Sim</option>
-                </select>
-              </label>
-
-              <div class="actions full">
-                <button class="btn btn-primary" type="submit">Salvar no catálogo</button>
-                <button id="catalogClearBtn" class="btn btn-secondary" type="button">Limpar</button>
-              </div>
-
-              <p id="catalogMessage" class="message full"></p>
-            </form>
-          </div>
-
-          <div class="card">
-            <div class="section-head">
-              <div>
-                <h2>Catálogo público</h2>
-                <p class="muted">Itens que podem ser exibidos na página catalogo.html.</p>
-              </div>
-              <button id="catalogRefreshBtn" class="btn btn-secondary" type="button">Atualizar</button>
-            </div>
-
-            <div class="filters-grid">
-              <label>
-                Buscar
-                <input id="catalogSearch" placeholder="Nome, categoria, descrição..." />
-              </label>
-              <label>
-                Visibilidade
-                <select id="catalogVisibleFilter">
-                  <option value="">Todos</option>
-                  <option value="SIM">Visíveis</option>
-                  <option value="NAO">Ocultos</option>
-                </select>
-              </label>
-            </div>
-
-            <div id="catalogPreviewGrid" class="catalog-admin-grid"></div>
-
-            <div class="table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Empresa</th>
-                    <th>Categoria</th>
-                    <th>Contato</th>
-                    <th>Visível</th>
-                    <th>Destaque</th>
-                    <th>Ações</th>
-                  </tr>
-                </thead>
-                <tbody id="catalogTableBody"></tbody>
-              </table>
-            </div>
-
-            <p class="muted small">Página pública: <strong>catalogo.html</strong></p>
-          </div>
-        </div>
-      </section>
-
-
-      <section class="tab-panel" id="tab-protocolos">
-        <div class="layout-two">
-          <div class="card" data-permission="requests.manage">
-            <div class="section-head">
-              <div>
-                <h2 id="requestFormTitle">Atendimento do protocolo</h2>
-                <p class="muted">Responda e acompanhe solicitações abertas pelo portal.</p>
-              </div>
-              <button id="requestCancelEditBtn" class="btn btn-secondary hidden" type="button">Cancelar edição</button>
-            </div>
-
-            <form id="requestForm" class="grid">
-              <input id="requestId" type="hidden" />
-
-              <label>
-                Protocolo
-                <input id="requestProtocol" readonly placeholder="Selecione um protocolo na tabela" />
-              </label>
-
-              <label>
-                Status
-                <select id="requestStatus">
-                  <option value="ABERTA">Aberta</option>
-                  <option value="EM_ANALISE">Em análise</option>
-                  <option value="AGUARDANDO_ASSOCIADO">Aguardando associado</option>
-                  <option value="CONCLUIDA">Concluída</option>
-                  <option value="CANCELADA">Cancelada</option>
-                </select>
-              </label>
-
-              <label class="full">
-                Resposta para o associado
-                <textarea id="requestResponse" rows="4" placeholder="Mensagem que o associado verá no portal"></textarea>
-              </label>
-
-              <label class="full">
-                Observação interna
-                <textarea id="requestInternalNote" rows="3" placeholder="Controle interno da equipe"></textarea>
-              </label>
-
-              <div class="actions full">
-                <button class="btn btn-primary" type="submit">Salvar atendimento</button>
-                <button id="requestClearBtn" class="btn btn-secondary" type="button">Limpar</button>
-              </div>
-
-              <p id="requestMessage" class="message full"></p>
-            </form>
-          </div>
-
-          <div class="card">
-            <div class="section-head">
-              <div>
-                <h2>Protocolos</h2>
-                <p class="muted">Solicitações recebidas dos associados.</p>
-              </div>
-              <button id="requestsRefreshBtn" class="btn btn-secondary" type="button">Atualizar</button>
-            </div>
-
-            <div class="filters-grid">
-              <label>
-                Buscar
-                <input id="requestSearch" placeholder="Protocolo, associado, mensagem..." />
-              </label>
-              <label>
-                Status
-                <select id="requestStatusFilter">
-                  <option value="">Todos</option>
-                  <option value="ABERTA">Aberta</option>
-                  <option value="EM_ANALISE">Em análise</option>
-                  <option value="AGUARDANDO_ASSOCIADO">Aguardando associado</option>
-                  <option value="CONCLUIDA">Concluída</option>
-                  <option value="CANCELADA">Cancelada</option>
-                </select>
-              </label>
-            </div>
-
-            <div class="table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Protocolo</th>
-                    <th>Associado</th>
-                    <th>Tipo</th>
-                    <th>Status</th>
-                    <th>Abertura</th>
-                    <th>Ações</th>
-                  </tr>
-                </thead>
-                <tbody id="requestsTableBody"></tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      </section>
-
-<section class="tab-panel" id="tab-relatorios">
-        <div class="card">
+      <section id="tab-cadastro" class="tab-panel">
+        <section class="card">
           <div class="section-head">
             <div>
-              <h2>Central de relatórios</h2>
-              <p class="muted small">Consultas consolidadas em um único lugar, separadas por área para chefia e conferência administrativa.</p>
+              <h2>Ficha do associado</h2>
+              <p class="muted">Preencha os dados principais do associado.</p>
             </div>
-            <div class="actions">
-              <button id="refreshReportBtn" class="btn btn-secondary" type="button">Atualizar dados</button>
-              <button id="reportExportBtn" class="btn btn-secondary" type="button">Exportar consulta</button>
-            </div>
+            <button id="newMemberBtn" class="btn btn-secondary" type="button">Novo cadastro</button>
           </div>
 
-          <div class="report-catalog refined-report-catalog">
-            <section class="report-group-card">
-              <span class="eyebrow">Associados</span>
-              <strong>Cadastro e vínculo</strong>
-              <p class="muted small">Relação geral, situação cadastral e histórico individual.</p>
-              <button class="mini-link" data-go-tab="cadastro" data-focus="memberSearch" type="button">Abrir relação de associados</button>
-              <button class="mini-link" data-go-tab="historico" data-focus="historyMemberId" type="button">Consultar histórico individual</button>
-            </section>
-            <section class="report-group-card">
-              <span class="eyebrow">Mensalidades</span>
-              <strong>Recebimentos e pendências</strong>
-              <p class="muted small">Período, status, inadimplência e baixa de mensalidades.</p>
-              <button class="mini-link" data-go-tab="mensalidades" data-focus="duesSearch" type="button">Abrir mensalidades</button>
-              <button class="mini-link" data-go-tab="relatorios" data-focus="financialStatusFilter" type="button">Filtrar inadimplência</button>
-            </section>
-            <section class="report-group-card">
-              <span class="eyebrow">Financeiro</span>
-              <strong>Caixa e despesas</strong>
-              <p class="muted small">Caixa mensal, despesas por categoria, entradas e fechamento.</p>
-              <button class="mini-link" data-go-tab="relatorios" data-action="cash-monthly-report" data-focus="cashMonthlyReportCompetencia" type="button">Gerar caixa mensal</button>
-              <button class="mini-link" data-go-tab="relatorios" data-action="cash-book-report" data-focus="cashBookInicio" type="button">Abrir livro caixa</button>
-              <button class="mini-link" data-go-tab="caixa" data-focus="cashTipo" type="button">Ver fechamentos</button>
-            </section>
-            <section class="report-group-card">
-              <span class="eyebrow">Documentos</span>
-              <strong>Emissões e auditoria</strong>
-              <p class="muted small">Documentos emitidos e trilha de auditoria do sistema.</p>
-              <button class="mini-link" data-go-tab="documentos" data-focus="documentsSearch" type="button">Consultar documentos</button>
-              <button class="mini-link" data-go-tab="auditoria" type="button">Abrir auditoria</button>
-            </section>
-          </div></div>
+          <form id="memberForm" class="grid">
+            <input id="memberId" type="hidden" />
 
-          <div class="toolbar compact finance-toolbar sticky-filter">
+            <div class="grid cols-3">
+              <label>
+                Nome completo *
+                <input id="memberNome" required placeholder="Nome do associado" />
+              </label>
+
+              <label>
+                CPF
+                <input id="memberCpf" inputmode="numeric" placeholder="000.000.000-00" />
+              </label>
+
+              <label>
+                RG
+                <input id="memberRg" placeholder="Documento de identidade" />
+              </label>
+            </div>
+
+            <div class="grid cols-4">
+              <label>
+                Data de nascimento
+                <input id="memberDataNascimento" type="date" />
+              </label>
+
+              <label>
+                Telefone
+                <input id="memberTelefone" placeholder="(00) 00000-0000" />
+              </label>
+
+              <label>
+                E-mail
+                <input id="memberEmail" type="email" placeholder="email@exemplo.com" />
+              </label>
+
+              <label>
+                Data de associação
+                <input id="memberDataAssociacao" type="date" />
+              </label>
+            </div>
+
+            <div class="grid cols-4">
+              <label>
+                Onde trabalha *
+                <input id="memberLocalTrabalho" list="localTrabalhoList" required placeholder="Ex.: Prefeitura, Escola..." />
+              </label>
+
+              <label>
+                Setor *
+                <input id="memberSetor" list="setorList" required placeholder="Ex.: Educação, Saúde..." />
+              </label>
+
+              <label>
+                Função / cargo *
+                <input id="memberFuncao" list="funcaoList" required placeholder="Ex.: Motorista, Professor..." />
+              </label>
+
+              <label>
+                Matrícula
+                <input id="memberMatricula" placeholder="Matrícula funcional" />
+              </label>
+            </div>
+
+            <div class="grid cols-4">
+              <label>
+                Endereço
+                <input id="memberEndereco" placeholder="Rua, número e complemento" />
+              </label>
+
+              <label>
+                Bairro
+                <input id="memberBairro" placeholder="Bairro" />
+              </label>
+
+              <label>
+                Cidade
+                <input id="memberCidade" value="Além Paraíba" />
+              </label>
+
+              <label>
+                UF
+                <input id="memberUf" maxlength="2" value="MG" />
+              </label>
+            </div>
+
+            <div class="grid cols-3">
+              <label>
+                CEP
+                <input id="memberCep" inputmode="numeric" placeholder="00000-000" />
+              </label>
+
+              <label>
+                Status
+                <select id="memberStatus">
+                  <option value="ATIVO">Ativo</option>
+                  <option value="INATIVO">Inativo</option>
+                </select>
+              </label>
+
+              <label>
+                Observações
+                <input id="memberObservacoes" placeholder="Observações internas" />
+              </label>
+            </div>
+
+            <div class="actions">
+              <button class="btn btn-primary" type="submit">Salvar associado</button>
+              <button id="clearMemberBtn" class="btn btn-secondary" type="button">Limpar</button>
+            </div>
+
+            <p id="memberMessage" class="message"></p>
+          </form>
+        </section>
+      </section>
+
+      <section id="tab-consulta" class="tab-panel">
+        <section class="card assoc-toolbar-card">
+          <div class="section-head">
+            <div>
+              <h2>Consultar associados</h2>
+              <p class="muted">Filtre por nome, CPF, onde trabalha, setor, função ou status.</p>
+            </div>
+            <button id="searchMembersBtn" class="btn btn-primary" type="button">Buscar</button>
+          </div>
+
+          <div class="grid cols-4">
             <label>
-              Início
-              <input id="financialInicio" type="month" />
+              Busca
+              <input id="filterSearch" placeholder="Nome, CPF, setor, função..." />
             </label>
+
             <label>
-              Fim
-              <input id="financialFim" type="month" />
-            </label>
-            <label>
-              Status
-              <select id="financialStatusFilter">
+              Onde trabalha
+              <select id="filterLocalTrabalho">
                 <option value="">Todos</option>
-                <option value="ABERTA">ABERTA</option>
-                <option value="PAGA">PAGA</option>
-                <option value="ATRASADA">ATRASADA</option>
-                <option value="CANCELADA">CANCELADA</option>
               </select>
             </label>
-            <label class="grow">
-              Buscar
-              <input id="financialSearch" placeholder="Nome, CPF, forma ou competência" />
+
+            <label>
+              Setor
+              <select id="filterSetor">
+                <option value="">Todos</option>
+              </select>
+            </label>
+
+            <label>
+              Função
+              <select id="filterFuncao">
+                <option value="">Todas</option>
+              </select>
             </label>
           </div>
 
-          <p id="financeMessage" class="message"></p>
+          <div class="grid cols-4 mt-16">
+            <label>
+              Status
+              <select id="filterStatus">
+                <option value="">Todos</option>
+                <option value="ATIVO">Ativo</option>
+                <option value="INATIVO">Inativo</option>
+              </select>
+            </label>
 
-          <section class="stats-grid mt-16">
-            <article class="stat-card">
-              <div class="stat-label">Total lançado</div>
-              <div id="financeLancado" class="stat-value money-value privacy-sensitive">R$ 0,00</div>
-            </article>
-            <article class="stat-card">
-              <div class="stat-label">Total pago</div>
-              <div id="financePago" class="stat-value money-value privacy-sensitive">R$ 0,00</div>
-            </article>
-            <article class="stat-card">
-              <div class="stat-label">Total em aberto</div>
-              <div id="financeAberto" class="stat-value money-value privacy-sensitive">R$ 0,00</div>
-            </article>
-            <article class="stat-card">
-              <div class="stat-label">Total em atraso</div>
-              <div id="financeAtrasado" class="stat-value money-value privacy-sensitive">R$ 0,00</div>
-            </article>
-            <article class="stat-card">
-              <div class="stat-label">Taxa de pagamento</div>
-              <div id="financeTaxaPago" class="stat-value">0%</div>
-            </article>
-            <article class="stat-card">
-              <div class="stat-label">Associados inadimplentes</div>
-              <div id="financeInadimplentes" class="stat-value">0</div>
-            </article>
-          </section>
+            <label>
+              Ordenar por
+              <select id="filterSortBy">
+                <option value="nome">Nome</option>
+                <option value="localTrabalho">Onde trabalha</option>
+                <option value="setor">Setor</option>
+                <option value="funcao">Função</option>
+                <option value="updatedAt">Atualização</option>
+              </select>
+            </label>
 
-          <div class="finance-panels mt-16">
-            <section class="panel-block">
-              <div class="section-head">
-                <h2>Arrecadação mensal</h2>
-              </div>
-              <div id="financeMonthlyBars" class="bar-list"></div>
-            </section>
+            <label>
+              Direção
+              <select id="filterSortDir">
+                <option value="asc">Crescente</option>
+                <option value="desc">Decrescente</option>
+              </select>
+            </label>
 
-            <section class="panel-block">
-              <div class="section-head">
-                <h2>Resumo das mensalidades</h2>
-              </div>
-              <div class="table-wrap">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Status</th>
-                      <th>Qtd.</th>
-                      <th>Total</th>
-                    </tr>
-                  </thead>
-                  <tbody id="financeStatusTableBody"></tbody>
-                </table>
-              </div>
-            </section>
+            <label>
+              Limite
+              <select id="filterLimit">
+                <option value="100">100 registros</option>
+                <option value="250">250 registros</option>
+                <option value="500">500 registros</option>
+                <option value="">Todos</option>
+              </select>
+            </label>
           </div>
 
-          <div class="section-head mt-16">
-            <h2>Pendências e inadimplência do período</h2>
+          <p id="consultMessage" class="message mt-16"></p>
+        </section>
+
+        <section class="card">
+          <div class="section-head">
+            <div>
+              <h2>Resultado da consulta</h2>
+              <p id="consultCount" class="muted">Nenhum resultado carregado.</p>
+            </div>
+            <div class="actions">
+              <button id="exportConsultCsvBtn" class="btn btn-secondary" type="button">Exportar CSV</button>
+            </div>
           </div>
 
-          <div class="table-wrap mt-16">
+          <div class="table-wrap">
             <table>
               <thead>
                 <tr>
                   <th>Nome</th>
                   <th>CPF</th>
-                  <th>Mensalidades</th>
-                  <th>Última competência</th>
-                  <th>Total em atraso</th>
-                </tr>
-              </thead>
-              <tbody id="financeInadTableBody"></tbody>
-            </table>
-          </div>
-
-<div class="card monthly-report-card mt-16" data-permission="cash.read">
-            <div class="section-head">
-              <div>
-                <h2>Relatório mensal do caixa</h2>
-                <p class="muted small">Entradas, saídas, custos fixos, custos variáveis e saldo do mês selecionado.</p>
-              </div>
-              <div class="actions">
-                <button id="cashMonthlyReportBtn" class="btn btn-secondary" type="button">Gerar caixa mensal</button>
-                <button id="cashMonthlyPrintBtn" class="btn btn-secondary" type="button">Imprimir ou salvar PDF</button>
-              </div>
-            </div>
-
-            <div class="toolbar compact">
-              <label>
-                Competência
-                <input id="cashMonthlyReportCompetencia" type="month" />
-              </label>
-            </div>
-
-            <div id="cashMonthlyReportBox" class="monthly-report-box">
-              <p class="muted small">Selecione a competência e clique em “Gerar”.</p>
-            </div>
-          </div>
-
-          <div class="card cash-book-card mt-16" data-permission="cash.read">
-            <div class="section-head">
-              <div>
-                <h2>Livro caixa</h2>
-                <p class="muted small">Entradas e saídas em ordem de data, com saldo acumulado para conferência e prestação de contas.</p>
-              </div>
-              <div class="actions">
-                <button id="cashBookGenerateBtn" class="btn btn-primary" type="button">Gerar livro caixa</button>
-                <button id="cashBookPrintBtn" class="btn btn-secondary" type="button">Imprimir ou salvar PDF</button>
-                <button id="cashBookExportBtn" class="btn btn-secondary" type="button">Exportar CSV</button>
-              </div>
-            </div>
-
-            <div class="toolbar compact">
-              <label>
-                Início
-                <input id="cashBookInicio" type="date" />
-              </label>
-              <label>
-                Fim
-                <input id="cashBookFim" type="date" />
-              </label>
-              <label class="grow">
-                Buscar
-                <input id="cashBookSearch" placeholder="Descrição, associado, categoria ou forma" />
-              </label>
-            </div>
-
-            <div id="cashBookReportBox" class="cash-book-box mt-12">
-              <p class="muted small">Selecione o período e clique em “Gerar livro caixa”.</p>
-            </div>
-          </div>
-
-          <input id="reportCompetencia" class="hidden" type="month" />
-      </section>
-
-      <section class="tab-panel" id="tab-caixa" data-permission="cash.read">
-        <div class="module-context-card finance-context-card" data-permission="cash.read">
-          <div>
-            <span class="eyebrow">Módulo financeiro</span>
-            <strong>Financeiro operacional</strong>
-            <p class="muted small">Operação diária de caixa, entradas, despesas, contas a pagar e fechamento. Relatórios analíticos ficam em Relatórios.</p>
-          </div>
-          <div class="module-subnav" aria-label="Subáreas do financeiro">
-            <button class="module-link" data-go-tab="caixa" data-focus="cashTipo" data-permission="cash.read" type="button">Caixa</button>
-            <button class="module-link" data-go-tab="despesas" data-action="quick-expense" data-focus="quickExpenseDescricao" data-permission="cash.close" type="button">Movimentos</button>
-            <button class="module-link" data-go-tab="contas-pagar" data-action="payables" data-focus="payableDescricao" data-permission="cash.read" type="button">Contas a pagar</button>
-          </div>
-        </div>
-
-        <div class="finance-workflow-strip">
-          <span><b>1</b> Conferir caixa</span>
-          <span><b>2</b> Registrar entrada ou despesa</span>
-          <span><b>3</b> Baixar conta a pagar</span>
-          <span><b>4</b> Fechar período</span>
-        </div>
-
-        <div class="card caixa-command-card">
-          <div class="section-head">
-            <div>
-              <h2>Conferência do caixa</h2>
-              <p class="muted small">Resumo reservado do período, pagamentos recebidos e fechamento operacional.</p>
-            </div>
-            <div class="actions">
-              <button id="cashRefreshBtn" class="btn btn-secondary" type="button">Atualizar</button>
-              <button id="cashNewIncomeBtn" class="btn btn-secondary redundant-action-source" data-permission="cash.close" type="button">Nova entrada</button>
-              <button id="cashNewExpenseBtn" class="btn btn-primary redundant-action-source" data-permission="cash.close" type="button">Nova despesa</button>
-              <button id="cashPayablesFocusBtn" class="btn btn-secondary redundant-action-source" data-permission="cash.read" type="button">Contas a pagar</button>
-              <button id="cashSaveBtn" class="btn btn-secondary" data-permission="cash.close" type="button">Fechamento</button>
-              <button id="cashExportBtn" class="btn btn-secondary" type="button">Exportar</button>
-            </div>
-          </div>
-
-          <div class="toolbar compact">
-            <label>
-              Tipo
-              <select id="cashTipo">
-                <option value="DIARIO">Diário</option>
-                <option value="MENSAL">Mensal</option>
-              </select>
-            </label>
-            <label id="cashDataWrap">
-              Data
-              <input id="cashData" type="date" />
-            </label>
-            <label id="cashCompetenciaWrap" class="hidden">
-              Competência
-              <input id="cashCompetencia" type="month" />
-            </label>
-            <label class="grow">
-              Observações do fechamento
-              <input id="cashObservacoes" maxlength="240" />
-            </label>
-          </div>
-        </div>
-
-        <div class="finance-module-grid mt-16">
-          <button class="finance-module-tile active" data-go-tab="caixa" data-focus="cashTipo" data-permission="cash.read" type="button">
-            <strong>Caixa</strong>
-            <span>Conferir recebimentos, saldo do período e fechamento.</span>
-          </button>
-          <button class="finance-module-tile" data-go-tab="despesas" data-action="quick-expense" data-focus="quickExpenseDescricao" data-permission="cash.close" type="button">
-            <strong>Movimentos do caixa</strong>
-            <span>Lançar entrada avulsa, despesa, custo fixo ou custo variável.</span>
-          </button>
-          <button class="finance-module-tile" data-go-tab="contas-pagar" data-action="payables" data-focus="payableDescricao" data-permission="cash.read" type="button">
-            <strong>Contas a pagar</strong>
-            <span>Controlar vencimentos, fornecedores e baixa de despesas previstas.</span>
-          </button>
-        </div>
-
-<section class="stats-grid mt-16 cash-summary-grid">
-          <article class="stat-card">
-            <div class="stat-label">Entradas</div>
-            <div id="cashTotalEntradas" class="stat-value money-value privacy-sensitive">R$ 0,00</div>
-          </article>
-          <article class="stat-card">
-            <div class="stat-label">Custos fixos</div>
-            <div id="cashCustosFixos" class="stat-value money-value privacy-sensitive">R$ 0,00</div>
-          </article>
-          <article class="stat-card">
-            <div class="stat-label">Custos variáveis</div>
-            <div id="cashCustosVariaveis" class="stat-value money-value privacy-sensitive">R$ 0,00</div>
-          </article>
-          <article class="stat-card">
-            <div class="stat-label">Saldo do período</div>
-            <div id="cashSaldoPeriodo" class="stat-value money-value privacy-sensitive">R$ 0,00</div>
-          </article>
-        </section>
-
-        <section class="stats-grid mt-16">
-          <article class="stat-card">
-            <div class="stat-label">Mensalidades recebidas</div>
-            <div id="cashTotalRecebido" class="stat-value money-value privacy-sensitive">R$ 0,00</div>
-          </article>
-          <article class="stat-card">
-            <div class="stat-label">Pagamentos</div>
-            <div id="cashQuantidadePagamentos" class="stat-value money-value privacy-sensitive">0</div>
-          </article>
-          <article class="stat-card">
-            <div class="stat-label">Período</div>
-            <div id="cashPeriodo" class="stat-value">-</div>
-          </article>
-          <article class="stat-card">
-            <div class="stat-label">Situação</div>
-            <div id="cashStatus" class="stat-value">Aberto</div>
-          </article>
-        </section>
-
-        
-
-        <div class="layout-two mt-16">
-
-
-<div class="card">
-            <div class="section-head">
-              <h2>Por forma de pagamento</h2>
-            </div>
-            <div class="table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Forma</th>
-                    <th>Entradas</th>
-                  </tr>
-                </thead>
-                <tbody id="cashMethodsTableBody"></tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-
-<div class="layout-two mt-16">
-          <div class="card">
-            <div class="section-head">
-              <h2>Pagamentos do período</h2>
-            </div>
-            <div class="table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Associado</th>
-                    <th>Competência</th>
-                    <th>Pago em</th>
-                    <th>Forma</th>
-                    <th>Valor</th>
-                  </tr>
-                </thead>
-                <tbody id="cashPaymentsTableBody"></tbody>
-              </table>
-            </div>
-          </div>
-
-          <div class="card">
-            <div class="section-head">
-              <h2>Fechamentos salvos</h2>
-            </div>
-            <div class="table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Tipo</th>
-                    <th>Período</th>
-                    <th>Entradas</th>
-                    <th>Saídas</th>
-                    <th>Saldo</th>
-                    <th>Por</th>
-                  </tr>
-                </thead>
-                <tbody id="cashClosingsTableBody"></tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      </section>
-
-<section class="tab-panel" id="tab-despesas" data-permission="cash.read">
-        <div class="module-context-card finance-context-card" data-permission="cash.read">
-          <div>
-            <span class="eyebrow">Módulo financeiro</span>
-            <strong>Financeiro operacional</strong>
-            <p class="muted small">Operação diária de caixa, entradas, despesas, contas a pagar e fechamento. Relatórios analíticos ficam em Relatórios.</p>
-          </div>
-          <div class="module-subnav" aria-label="Subáreas do financeiro">
-            <button class="module-link" data-go-tab="caixa" data-focus="cashTipo" data-permission="cash.read" type="button">Caixa</button>
-            <button class="module-link" data-go-tab="despesas" data-action="quick-expense" data-focus="quickExpenseDescricao" data-permission="cash.close" type="button">Movimentos</button>
-            <button class="module-link" data-go-tab="contas-pagar" data-action="payables" data-focus="payableDescricao" data-permission="cash.read" type="button">Contas a pagar</button>
-          </div>
-        </div>
-
-        <div class="card caixa-command-card">
-          <div class="section-head">
-            <div>
-              <h2>Movimentos do caixa</h2>
-              <p class="muted small">Lançamentos operacionais de entrada e saída, separados por classificação.</p>
-            </div>
-            <div class="actions">
-              <button id="despesasQuickFocusBtn" class="btn btn-primary redundant-action-source" data-permission="cash.close" type="button">Despesa rápida</button>
-              <button id="despesasFullExpenseBtn" class="btn btn-secondary redundant-action-source" data-permission="cash.close" type="button">Despesa detalhada</button>
-              <button id="despesasIncomeBtn" class="btn btn-secondary redundant-action-source" data-permission="cash.close" type="button">Registrar entrada</button>
-            </div>
-          </div>
-
-          <div class="cash-entry-callout">
-            <strong>Rotina recomendada:</strong>
-            use <b>Lançamento simples</b> para gastos simples do dia e <b>Lançamento completo</b> quando precisar registrar data, forma de pagamento ou observações.
-          </div>
-        </div>
-
-        <div class="layout-two mt-16 cash-work-layout">
-<div class="card quick-expense-card" data-permission="cash.close">
-            <div class="section-head">
-              <div>
-                <h2>Despesa rápida</h2>
-                <p class="muted small">Use para gastos simples do dia, com poucos campos e registro imediato.</p>
-              </div>
-            </div>
-
-            <form id="quickExpenseForm" class="grid form-window">
-              <div class="form-section-title">Registro rápido de saída</div>
-              <div class="grid cols-4">
-                <label>
-                  Descrição
-                  <input id="quickExpenseDescricao" maxlength="120" placeholder="Ex.: Café, material, tarifa" />
-                </label>
-                <label>
-                  Valor
-                  <input id="quickExpenseValor" type="text" inputmode="decimal" placeholder="0,00" />
-                </label>
-                <label>
-                  Tipo de custo
-                  <select id="quickExpenseClassificacao">
-                    <option value="CUSTO_VARIAVEL">Custo variável</option>
-                    <option value="CUSTO_FIXO">Custo fixo</option>
-                  </select>
-                </label>
-                <label>
-                  Categoria
-                  <select id="quickExpenseCategoria"></select>
-                </label>
-              </div>
-
-              <div class="quick-expense-footer">
-                <span class="muted small">Data de lançamento: hoje • Forma padrão: PIX</span>
-                <button class="btn btn-primary" type="submit">Salvar despesa rápida</button>
-              </div>
-            </form>
-          </div>
-
-<div class="card expense-entry-card" data-permission="cash.close">
-            <div class="section-head">
-              <div>
-                <h2>Lançamento detalhado</h2>
-                <p class="muted small">Use para entrada ou despesa com data, forma, categoria e observações.</p>
-              </div>
-              <button id="cashMovementClearBtn" class="btn btn-secondary" type="button">Limpar</button>
-            </div>
-
-            <div class="movement-mode-bar" aria-label="Tipo de lançamento">
-              <button id="cashExpenseModeBtn" class="movement-mode-btn active" type="button">Despesa / saída</button>
-              <button id="cashIncomeModeBtn" class="movement-mode-btn" type="button">Entrada avulsa</button>
-            </div>
-
-            <form id="cashMovementForm" class="grid form-window">
-              <input id="cashMovementId" type="hidden" />
-              <div class="form-section-title">Dados do movimento</div>
-
-              <div class="grid cols-3">
-                <label>
-                  Movimento
-                  <select id="cashMovementTipo">
-                    <option value="SAIDA">Saída - despesa/custo</option>
-                    <option value="ENTRADA">Entrada - receita avulsa</option>
-                  </select>
-                </label>
-                <label>
-                  Classificação
-                  <select id="cashMovementClassificacao">
-                    <option value="CUSTO_FIXO">Custo fixo</option>
-                    <option value="CUSTO_VARIAVEL">Custo variável</option>
-                    <option value="RECEITA_OPERACIONAL">Receita operacional</option>
-                  </select>
-                </label>
-                <label>
-                  Data
-                  <input id="cashMovementData" type="date" />
-                </label>
-              </div>
-
-              <div class="grid cols-3">
-                <label>
-                  Categoria
-                  <select id="cashMovementCategoria"></select>
-                </label>
-                <label id="cashMovementCategoriaOutraWrap" class="hidden">
-                  Outra categoria
-                  <input id="cashMovementCategoriaOutra" maxlength="80" placeholder="Digite a categoria" />
-                </label>
-                <label>
-                  Valor
-                  <input id="cashMovementValor" type="text" inputmode="decimal" placeholder="0,00" />
-                </label>
-                <label>
-                  Forma
-                  <select id="cashMovementForma">
-                    <option value="PIX">PIX</option>
-                    <option value="DINHEIRO">DINHEIRO</option>
-                    <option value="BOLETO">BOLETO</option>
-                    <option value="CARTAO">CARTAO</option>
-                    <option value="TRANSFERENCIA">TRANSFERENCIA</option>
-                    <option value="OUTRO">OUTRO</option>
-                  </select>
-                </label>
-              </div>
-
-              <label>
-                Descrição
-                <input id="cashMovementDescricao" maxlength="160" placeholder="Ex.: Conta de energia da sede, material de escritório, reembolso" />
-              </label>
-
-              <label>
-                Observações
-                <input id="cashMovementObservacoes" maxlength="240" placeholder="Informação interna opcional" />
-              </label>
-
-              <div class="actions form-action-bar">
-                <button class="btn btn-primary" type="submit">Salvar lançamento</button>
-              </div>
-            </form>
-          </div>
-        </div>
-
-<div class="card">
-            <div class="section-head">
-              <h2>Movimentos manuais do período</h2>
-            </div>
-            <div class="table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Data</th>
-                    <th>Tipo</th>
-                    <th>Classificação</th>
-                    <th>Categoria</th>
-                    <th>Descrição</th>
-                    <th>Valor</th>
-                    <th>Ações</th>
-                  </tr>
-                </thead>
-                <tbody id="cashMovementsTableBody"></tbody>
-              </table>
-            </div>
-          </div>
-      </section>
-
-<section class="tab-panel" id="tab-contas-pagar" data-permission="cash.read">
-        <div class="module-context-card finance-context-card" data-permission="cash.read">
-          <div>
-            <span class="eyebrow">Módulo financeiro</span>
-            <strong>Financeiro operacional</strong>
-            <p class="muted small">Operação diária de caixa, entradas, despesas, contas a pagar e fechamento. Relatórios analíticos ficam em Relatórios.</p>
-          </div>
-          <div class="module-subnav" aria-label="Subáreas do financeiro">
-            <button class="module-link" data-go-tab="caixa" data-focus="cashTipo" data-permission="cash.read" type="button">Caixa</button>
-            <button class="module-link" data-go-tab="despesas" data-action="quick-expense" data-focus="quickExpenseDescricao" data-permission="cash.close" type="button">Movimentos</button>
-            <button class="module-link" data-go-tab="contas-pagar" data-action="payables" data-focus="payableDescricao" data-permission="cash.read" type="button">Contas a pagar</button>
-          </div>
-        </div>
-
-        <div class="card caixa-command-card">
-          <div class="section-head">
-            <div>
-              <h2>Contas a pagar</h2>
-              <p class="muted small">Cadastro, acompanhamento, vencimentos e baixa de despesas previstas.</p>
-            </div>
-            <div class="actions">
-              <button id="contasNovaBtn" class="btn btn-primary redundant-action-source" data-permission="cash.close" type="button">Cadastrar conta</button>
-              <button id="contasAtualizarBtn" class="btn btn-secondary redundant-action-source" type="button">Atualizar contas</button>
-            </div>
-          </div>
-        </div>
-
-<div class="layout-two mt-16 payables-layout" data-permission="cash.read">
-          <div class="card payables-card">
-            <div class="section-head">
-              <div>
-                <h2>Contas a pagar</h2>
-                <p class="muted small">Controle as despesas antes de lançar a saída no caixa.</p>
-              </div>
-              <button id="payableClearBtn" class="btn btn-secondary" data-permission="cash.close" type="button">Limpar formulário</button>
-            </div>
-
-            <form id="payableForm" class="grid form-window" data-permission="cash.close">
-              <input id="payableId" type="hidden" />
-              <div class="form-section-title">Dados da conta</div>
-
-              <div class="grid cols-3">
-                <label>
-                  Descrição
-                  <input id="payableDescricao" maxlength="160" placeholder="Ex.: Energia elétrica da sede" />
-                </label>
-                <label>
-                  Fornecedor
-                  <input id="payableFornecedor" maxlength="120" placeholder="Ex.: Energisa, contador, internet" />
-                </label>
-                <label>
-                  Vencimento
-                  <input id="payableVencimento" type="date" />
-                </label>
-              </div>
-
-              <div class="grid cols-3">
-                <label>
-                  Classificação
-                  <select id="payableClassificacao">
-                    <option value="CUSTO_FIXO">Custo fixo</option>
-                    <option value="CUSTO_VARIAVEL">Custo variável</option>
-                  </select>
-                </label>
-                <label>
-                  Categoria
-                  <select id="payableCategoria"></select>
-                </label>
-                <label id="payableCategoriaOutraWrap" class="hidden">
-                  Outra categoria
-                  <input id="payableCategoriaOutra" maxlength="80" placeholder="Digite a categoria" />
-                </label>
-              </div>
-
-              <div class="grid cols-3">
-                <label>
-                  Valor previsto
-                  <input id="payableValor" type="text" inputmode="decimal" placeholder="0,00" />
-                </label>
-                <label>
-                  Forma ao pagar
-                  <select id="payableFormaPagamento">
-                    <option value="PIX">PIX</option>
-                    <option value="DINHEIRO">DINHEIRO</option>
-                    <option value="BOLETO">BOLETO</option>
-                    <option value="CARTAO">CARTAO</option>
-                    <option value="TRANSFERENCIA">TRANSFERENCIA</option>
-                    <option value="OUTRO">OUTRO</option>
-                  </select>
-                </label>
-                <label>
-                  Observações
-                  <input id="payableObservacoes" maxlength="240" placeholder="Informação interna opcional" />
-                </label>
-              </div>
-
-              <div class="actions form-action-bar">
-                <button class="btn btn-primary" type="submit">Salvar conta a pagar</button>
-              </div>
-            </form>
-
-            <p id="payableMessage" class="message"></p>
-          </div>
-
-          <div class="card payable-alert-card">
-            <div class="section-head">
-              <div>
-                <h2>Avisos de vencimento</h2>
-                <p class="muted small">Despesas fixas pendentes no mês atual.</p>
-              </div>
-              <button id="payablesRefreshBtn" class="btn btn-secondary" type="button">Atualizar avisos</button>
-            </div>
-            <div id="payablesDueBox" class="payables-due-box">
-              <p class="muted small">Nenhuma conta carregada.</p>
-            </div>
-          </div>
-        </div>
-
-<div class="card mt-16" data-permission="cash.read">
-          <div class="section-head">
-            <div>
-              <h2>Relação de contas a pagar</h2>
-              <p class="muted small">Baixe uma conta para registrar automaticamente a saída no caixa.</p>
-            </div>
-            <div class="toolbar compact">
-              <label>
-                Competência
-                <input id="payablesCompetencia" type="month" />
-              </label>
-              <label>
-                Status
-                <select id="payablesStatusFilter">
-                  <option value="">Todos</option>
-                  <option value="PENDENTE">Pendentes</option>
-                  <option value="PAGA">Pagas</option>
-                </select>
-              </label>
-            </div>
-          </div>
-
-          <div class="table-wrap mt-16">
-            <table>
-              <thead>
-                <tr>
-                  <th>Vencimento</th>
-                  <th>Descrição</th>
-                  <th>Fornecedor</th>
-                  <th>Classificação</th>
-                  <th>Categoria</th>
-                  <th>Valor</th>
+                  <th>Telefone</th>
+                  <th>Onde trabalha</th>
+                  <th>Setor</th>
+                  <th>Função</th>
                   <th>Status</th>
                   <th>Ações</th>
                 </tr>
               </thead>
-              <tbody id="payablesTableBody"></tbody>
+              <tbody id="membersTableBody">
+                <tr><td colspan="8">Use os filtros para consultar.</td></tr>
+              </tbody>
             </table>
           </div>
-        </div>
+        </section>
       </section>
 
-<section class="tab-panel" id="tab-documentos">
-        <div class="layout-two">
-          <div class="card" data-permission="documents.issue">
-            <div class="section-head">
-              <h2>Emitir documentos</h2>
+
+      <section id="tab-listas" class="tab-panel">
+        <section class="card">
+          <div class="section-head">
+            <div>
+              <h2>Configuração</h2>
+              <p class="muted">Cadastre usuários do sistema e as opções que aparecem em Onde trabalha, Setor e Função/cargo.</p>
             </div>
-
-            <form id="documentIssueForm" class="grid form-window">
-              <div class="form-section-title">Dados do documento</div>
-              <label>
-                Associado
-                <select id="documentMemberId"></select>
-              </label>
-
-              <div class="grid cols-2">
-                <label>
-                  Tipo
-                  <select id="documentType">
-                    <option value="DECLARACAO_FILIACAO">Declaração de filiação</option>
-                    <option value="FICHA_CADASTRAL">Ficha cadastral</option>
-                    <option value="DECLARACAO_QUITACAO_ANUAL">Declaração de quitação anual</option>
-                  </select>
-                </label>
-                <label id="documentYearWrap">
-                  Ano de referência
-                  <input id="documentYear" type="number" min="2000" max="2100" />
-                </label>
-              </div>
-
-              <div class="actions form-action-bar">
-                <button class="btn btn-primary" type="submit">Gerar documento PDF</button>
-              </div>
-
-              <p class="note">A quitação anual só é emitida quando todas as mensalidades do ano estiverem pagas.</p>
-              <p id="documentIssueMessage" class="message"></p>
-            </form>
-
-            <div class="divider"></div>
-
-            <h2>Alterar minha senha</h2>
-            <form id="changePasswordForm" class="grid mt-16">
-              <div class="grid cols-3">
-                <label>
-                  Senha atual
-                  <input id="passwordCurrent" type="password" />
-                </label>
-                <label>
-                  Nova senha
-                  <input id="passwordNew" type="password" />
-                </label>
-                <label>
-                  Confirmar nova senha
-                  <input id="passwordConfirm" type="password" />
-                </label>
-              </div>
-
-              <div class="actions form-action-bar">
-                <button class="btn btn-secondary" type="submit">Atualizar senha</button>
-              </div>
-
-              <p id="changePasswordMessage" class="message"></p>
-            </form>
           </div>
 
-          <div class="card">
-            <div class="section-head">
-              <h2>Histórico de documentos</h2>
-              <div class="actions">
-                <button id="documentsRefreshBtn" class="btn btn-secondary" type="button">Atualizar documentos</button>
-                <button id="documentsExportBtn" class="btn btn-secondary" type="button">Exportar documentos</button>
+          <p id="optionsMessage" class="message"></p>
+
+          <section class="option-manager-card config-user-card">
+            <div class="section-head compact-head">
+              <div>
+                <h3>Usuários do sistema</h3>
+                <p class="muted">Adicione novos usuários para acessar o sistema ou remova usuários antigos.</p>
               </div>
             </div>
 
-            <div class="toolbar compact">
-              <input id="documentsSearch" class="grow" placeholder="Buscar por nome, número, tipo ou competência" />
-              <select id="documentsTypeFilter">
-                <option value="">Todos os tipos</option>
-                <option value="RECIBO_MENSALIDADE">Recibo</option>
-                <option value="DECLARACAO_FILIACAO">Declaração de filiação</option>
-                <option value="FICHA_CADASTRAL">Ficha cadastral</option>
-                <option value="DECLARACAO_QUITACAO_ANUAL">Quitação anual</option>
-              </select>
-              <input id="documentsYearFilter" type="number" min="2000" max="2100" placeholder="Ano" />
-            </div>
+            <p id="usersMessage" class="message"></p>
+
+            <form id="userForm" class="grid cols-3">
+              <label>
+                Nome
+                <input id="userNome" placeholder="Nome do usuário" autocomplete="off" />
+              </label>
+
+              <label>
+                Usuário
+                <input id="userUsername" placeholder="Ex.: secretaria" autocomplete="off" />
+              </label>
+
+              <label>
+                Senha
+                <input id="userPassword" type="password" placeholder="Senha de acesso" autocomplete="new-password" />
+              </label>
+
+              <div class="actions">
+                <button class="btn btn-primary" type="submit">Adicionar usuário</button>
+                <button id="clearUserBtn" class="btn btn-secondary" type="button">Limpar</button>
+              </div>
+            </form>
 
             <div class="table-wrap mt-16">
               <table>
                 <thead>
                   <tr>
-                    <th>Número</th>
-                    <th>Tipo</th>
                     <th>Nome</th>
-                    <th>Competência</th>
-                    <th>Emissão</th>
+                    <th>Usuário</th>
+                    <th>Criado em</th>
                     <th>Ações</th>
                   </tr>
                 </thead>
-                <tbody id="documentsTableBody"></tbody>
+                <tbody id="usersTableBody">
+                  <tr><td colspan="4">Carregando...</td></tr>
+                </tbody>
               </table>
             </div>
-          </div>
-        </div>
-      </section>
+          </section>
 
-
-      <section class="tab-panel" id="tab-eventos">
-        <div class="layout-two">
-          <div class="card" data-permission="events.manage">
-            <div class="section-head">
+          <section class="option-manager-card public-config-card">
+            <div class="section-head compact-head">
               <div>
-                <h2 id="eventFormTitle">Novo evento</h2>
-                <p class="muted">Cadastre eventos, cursos, reuniões e ações da associação.</p>
+                <h3>Painel público</h3>
+                <p class="muted">Cadastre informações públicas: agenda, comunicados, documentos, atas, cursos e serviços.</p>
               </div>
-              <button id="eventCancelEditBtn" class="btn btn-secondary hidden" type="button">Cancelar edição</button>
             </div>
 
-            <form id="eventForm" class="grid form-window">
-              <input id="eventId" type="hidden" />
-              <div class="form-section-title">Dados do evento</div>
+            <p id="publicConfigMessage" class="message"></p>
 
-              <label>
-                Título
-                <input id="eventTitle" maxlength="120" placeholder="Ex.: Palestra de vendas" />
-              </label>
+            <form id="publicItemForm" class="grid">
+              <input id="publicItemId" type="hidden" />
 
-              <div class="grid cols-3">
+              <div class="grid cols-4">
                 <label>
                   Tipo
-                  <select id="eventType">
-                    <option value="CURSO">Curso</option>
-                    <option value="PALESTRA">Palestra</option>
-                    <option value="REUNIAO">Reunião</option>
-                    <option value="ASSEMBLEIA">Assembleia</option>
-                    <option value="CAMPANHA">Campanha</option>
-                    <option value="OUTRO">Outro</option>
+                  <select id="publicItemTipo">
+                    <option value="comunicado">Comunicado</option>
+                    <option value="agenda">Agenda</option>
+                    <option value="documento">Documento</option>
+                    <option value="ata">Ata</option>
+                    <option value="curso">Curso</option>
+                    <option value="servico">Serviço</option>
                   </select>
                 </label>
+
+                <label>
+                  Título *
+                  <input id="publicItemTitulo" placeholder="Ex.: Assembleia geral" />
+                </label>
+
                 <label>
                   Data
-                  <input id="eventDate" type="date" />
+                  <input id="publicItemData" type="date" />
                 </label>
+
                 <label>
                   Horário
-                  <input id="eventTime" type="time" />
+                  <input id="publicItemHorario" placeholder="Ex.: 18h30" />
                 </label>
               </div>
 
-              <div class="grid cols-2">
+              <div class="grid cols-4">
                 <label>
                   Local
-                  <input id="eventPlace" maxlength="160" placeholder="Ex.: Sede da ACEAP" />
+                  <input id="publicItemLocal" placeholder="Ex.: Sede do sindicato" />
                 </label>
+
                 <label>
-                  Vagas
-                  <input id="eventCapacity" type="number" min="0" placeholder="Opcional" />
+                  Link / arquivo
+                  <input id="publicItemLink" placeholder="Cole o link do documento, formulário ou página" />
+                </label>
+
+                <label>
+                  Ordem
+                  <input id="publicItemOrdem" type="number" min="0" step="1" placeholder="0" />
+                </label>
+
+                <label>
+                  Status
+                  <select id="publicItemStatus">
+                    <option value="ATIVO">Ativo</option>
+                    <option value="INATIVO">Inativo</option>
+                  </select>
                 </label>
               </div>
 
               <label>
                 Descrição
-                <textarea id="eventDescription" rows="4" maxlength="1200" placeholder="Resumo, orientações e informações para o associado"></textarea>
+                <textarea id="publicItemDescricao" placeholder="Texto que aparecerá no painel público"></textarea>
               </label>
 
-              <div class="grid cols-2">
-                <label>
-                  Status
-                  <select id="eventStatus">
-                    <option value="ATIVO">Ativo</option>
-                    <option value="RASCUNHO">Rascunho</option>
-                    <option value="CANCELADO">Cancelado</option>
-                    <option value="ENCERRADO">Encerrado</option>
-                  </select>
-                </label>
-                <label>
-                  Exibir no portal
-                  <select id="eventVisiblePortal">
-                    <option value="SIM">Sim</option>
-                    <option value="NAO">Não</option>
-                  </select>
-                </label>
+              <div class="actions">
+                <button class="btn btn-primary" type="submit">Salvar informação</button>
+                <button id="clearPublicItemBtn" class="btn btn-secondary" type="button">Limpar</button>
               </div>
-
-              <div class="actions form-action-bar">
-                <button class="btn btn-primary" type="submit">Salvar evento</button>
-                <button id="eventClearBtn" class="btn btn-secondary" type="button">Limpar</button>
-              </div>
-
-              <p id="eventMessage" class="message"></p>
             </form>
-          </div>
-
-          <div class="card">
-            <div class="section-head">
-              <div>
-                <h2>Calendário de eventos</h2>
-                <p class="muted">Eventos ativos aparecem no portal do associado.</p>
-              </div>
-              <button id="eventsRefreshBtn" class="btn btn-secondary" type="button">Atualizar</button>
-            </div>
-
-            <div class="toolbar compact">
-              <input id="eventSearch" class="grow" placeholder="Buscar por título, tipo, local ou descrição" />
-              <input id="eventDateFilter" type="month" />
-              <select id="eventStatusFilter">
-                <option value="">Todos</option>
-                <option value="ATIVO">Ativos</option>
-                <option value="RASCUNHO">Rascunhos</option>
-                <option value="CANCELADO">Cancelados</option>
-                <option value="ENCERRADO">Encerrados</option>
-              </select>
-            </div>
-
-            <div id="eventsCalendarGrid" class="event-calendar-grid mt-16"></div>
 
             <div class="table-wrap mt-16">
               <table>
                 <thead>
                   <tr>
-                    <th>Data</th>
-                    <th>Evento</th>
                     <th>Tipo</th>
-                    <th>Local</th>
-                    <th>Status</th>
-                    <th>Portal</th>
-                    <th>Ações</th>
-                  </tr>
-                </thead>
-                <tbody id="eventsTableBody"></tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section class="tab-panel" id="tab-avisos">
-        <div class="layout-two">
-          <div class="card" data-permission="announcements.manage">
-            <div class="section-head">
-              <div>
-                <h2 id="announcementFormTitle">Novo aviso</h2>
-                <p class="muted">Publique avisos que serão exibidos no portal do associado.</p>
-              </div>
-              <button id="announcementCancelEditBtn" class="btn btn-secondary hidden" type="button">Cancelar edição</button>
-            </div>
-
-            <form id="announcementForm" class="grid form-window">
-              <input id="announcementId" type="hidden" />
-              <div class="form-section-title">Dados do aviso</div>
-
-              <label>
-                Título
-                <input id="announcementTitle" maxlength="120" placeholder="Ex.: Comunicado importante" />
-              </label>
-
-              <label>
-                Mensagem
-                <textarea id="announcementMessageText" rows="5" maxlength="1800" placeholder="Texto que o associado verá no portal"></textarea>
-              </label>
-
-              <div class="grid cols-3">
-                <label>
-                  Público
-                  <select id="announcementAudience">
-                    <option value="TODOS">Todos</option>
-                    <option value="ATIVOS">Associados ativos</option>
-                    <option value="INADIMPLENTES">Inadimplentes</option>
-                  </select>
-                </label>
-                <label>
-                  Publicar em
-                  <input id="announcementPublishedAt" type="date" />
-                </label>
-                <label>
-                  Expira em
-                  <input id="announcementExpiresAt" type="date" />
-                </label>
-              </div>
-
-              <div class="grid cols-3">
-                <label>
-                  Status
-                  <select id="announcementStatus">
-                    <option value="ATIVO">Ativo</option>
-                    <option value="RASCUNHO">Rascunho</option>
-                    <option value="ARQUIVADO">Arquivado</option>
-                  </select>
-                </label>
-                <label>
-                  Fixar no topo
-                  <select id="announcementPinned">
-                    <option value="NAO">Não</option>
-                    <option value="SIM">Sim</option>
-                  </select>
-                </label>
-                <label>
-                  Exibir no portal
-                  <select id="announcementVisiblePortal">
-                    <option value="SIM">Sim</option>
-                    <option value="NAO">Não</option>
-                  </select>
-                </label>
-              </div>
-
-              <div class="actions form-action-bar">
-                <button class="btn btn-primary" type="submit">Salvar aviso</button>
-                <button id="announcementClearBtn" class="btn btn-secondary" type="button">Limpar</button>
-              </div>
-
-              <p id="announcementMessage" class="message"></p>
-            </form>
-          </div>
-
-          <div class="card">
-            <div class="section-head">
-              <div>
-                <h2>Quadro de avisos</h2>
-                <p class="muted">Avisos ativos e visíveis aparecem no portal.</p>
-              </div>
-              <button id="announcementsRefreshBtn" class="btn btn-secondary" type="button">Atualizar</button>
-            </div>
-
-            <div class="toolbar compact">
-              <input id="announcementSearch" class="grow" placeholder="Buscar por título, mensagem ou público" />
-              <select id="announcementStatusFilter">
-                <option value="">Todos</option>
-                <option value="ATIVO">Ativos</option>
-                <option value="RASCUNHO">Rascunhos</option>
-                <option value="ARQUIVADO">Arquivados</option>
-              </select>
-            </div>
-
-            <div id="announcementsBoard" class="announcement-board mt-16"></div>
-
-            <div class="table-wrap mt-16">
-              <table>
-                <thead>
-                  <tr>
                     <th>Título</th>
-                    <th>Público</th>
-                    <th>Publicação</th>
+                    <th>Data</th>
                     <th>Status</th>
-                    <th>Portal</th>
                     <th>Ações</th>
                   </tr>
                 </thead>
-                <tbody id="announcementsTableBody"></tbody>
+                <tbody id="publicItemsBody">
+                  <tr><td colspan="5">Carregando...</td></tr>
+                </tbody>
               </table>
             </div>
+          </section>
+
+          <div class="option-manager-grid">
+            <section class="option-manager-card">
+              <div class="section-head compact-head">
+                <div>
+                  <h3>Onde trabalha</h3>
+                  <p class="muted">Ex.: Prefeitura, Escola, Secretaria.</p>
+                </div>
+              </div>
+
+              <form id="optionFormLocalTrabalho" class="grid option-form" data-option-type="localTrabalho">
+                <input id="optionLocalTrabalhoId" type="hidden" />
+                <label>
+                  Nome da opção
+                  <input id="optionLocalTrabalhoNome" placeholder="Digite o local de trabalho" />
+                </label>
+                <div class="actions">
+                  <button class="btn btn-primary" type="submit">Salvar</button>
+                  <button class="btn btn-secondary" type="button" data-clear-option="localTrabalho">Limpar</button>
+                </div>
+              </form>
+
+              <div class="table-wrap mt-16">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Opção</th>
+                      <th>Ações</th>
+                    </tr>
+                  </thead>
+                  <tbody id="optionsLocalTrabalhoBody">
+                    <tr><td colspan="2">Carregando...</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </section>
+
+            <section class="option-manager-card">
+              <div class="section-head compact-head">
+                <div>
+                  <h3>Setor</h3>
+                  <p class="muted">Ex.: Educação, Saúde, Obras.</p>
+                </div>
+              </div>
+
+              <form id="optionFormSetor" class="grid option-form" data-option-type="setor">
+                <input id="optionSetorId" type="hidden" />
+                <label>
+                  Nome da opção
+                  <input id="optionSetorNome" placeholder="Digite o setor" />
+                </label>
+                <div class="actions">
+                  <button class="btn btn-primary" type="submit">Salvar</button>
+                  <button class="btn btn-secondary" type="button" data-clear-option="setor">Limpar</button>
+                </div>
+              </form>
+
+              <div class="table-wrap mt-16">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Opção</th>
+                      <th>Ações</th>
+                    </tr>
+                  </thead>
+                  <tbody id="optionsSetorBody">
+                    <tr><td colspan="2">Carregando...</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </section>
+
+            <section class="option-manager-card">
+              <div class="section-head compact-head">
+                <div>
+                  <h3>Função / cargo</h3>
+                  <p class="muted">Ex.: Motorista, Professor, Auxiliar.</p>
+                </div>
+              </div>
+
+              <form id="optionFormFuncao" class="grid option-form" data-option-type="funcao">
+                <input id="optionFuncaoId" type="hidden" />
+                <label>
+                  Nome da opção
+                  <input id="optionFuncaoNome" placeholder="Digite a função ou cargo" />
+                </label>
+                <div class="actions">
+                  <button class="btn btn-primary" type="submit">Salvar</button>
+                  <button class="btn btn-secondary" type="button" data-clear-option="funcao">Limpar</button>
+                </div>
+              </form>
+
+              <div class="table-wrap mt-16">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Opção</th>
+                      <th>Ações</th>
+                    </tr>
+                  </thead>
+                  <tbody id="optionsFuncaoBody">
+                    <tr><td colspan="2">Carregando...</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </section>
           </div>
-        </div>
+        </section>
       </section>
 
-      <section class="tab-panel" id="tab-usuarios">
-        <div class="layout-two">
-          <div class="card">
-            <div class="section-head">
-              <h2 id="userFormTitle">Novo usuário</h2>
-              <button id="cancelUserEditBtn" class="btn btn-secondary hidden" type="button">Cancelar edição</button>
+      <section id="tab-relatorios" class="tab-panel">
+        <h1 class="report-print-title">Relatório de Associados SINSERMAP</h1>
+
+        <section class="card assoc-toolbar-card no-print">
+          <div class="section-head">
+            <div>
+              <h2>Relatórios de associados</h2>
+              <p class="muted">Gere relatórios por onde trabalha, setor, função e status.</p>
             </div>
-
-            <form id="userForm" class="grid form-window">
-              <input id="userId" type="hidden" />
-              <div class="form-section-title">Dados de acesso</div>
-
-              <div class="grid cols-2">
-                <label>
-                  Nome
-                  <input id="userNome" />
-                </label>
-                <label>
-                  Login
-                  <input id="userUsername" />
-                </label>
-              </div>
-
-              <div class="grid cols-3">
-                <label>
-                  Perfil
-                  <select id="userRole">
-                    <option value="ADMIN">ADMIN</option>
-                    <option value="SECRETARIA">SECRETARIA</option>
-                    <option value="FINANCEIRO">FINANCEIRO</option>
-                    <option value="CONSULTA">CONSULTA</option>
-                  </select>
-                </label>
-                <label>
-                  Status
-                  <select id="userStatus">
-                    <option value="ATIVO">ATIVO</option>
-                    <option value="INATIVO">INATIVO</option>
-                  </select>
-                </label>
-                <label>
-                  Senha
-                  <input id="userPassword" type="password" placeholder="Obrigatória no cadastro" />
-                </label>
-              </div>
-
-              <div class="actions form-action-bar">
-                <button class="btn btn-primary" type="submit">Salvar usuário</button>
-                <button id="usersExportBtn" class="btn btn-secondary" type="button">Exportar usuários</button>
-              </div>
-
-              <p class="note">Ao editar, a senha pode ficar em branco para manter a atual.</p>
-              <p id="userMessage" class="message"></p>
-            </form>
+            <div class="actions">
+              <button id="loadReportBtn" class="btn btn-primary" type="button">Gerar relatório</button>
+              <button id="printReportBtn" class="btn btn-secondary" type="button">Imprimir</button>
+              <button id="exportReportCsvBtn" class="btn btn-secondary" type="button">Exportar CSV</button>
+            </div>
           </div>
 
-          <div class="card">
+          <div class="grid cols-4">
+            <label>
+              Busca
+              <input id="reportSearch" placeholder="Nome, local, setor ou função" />
+            </label>
+
+            <label>
+              Onde trabalha
+              <select id="reportLocalTrabalho">
+                <option value="">Todos</option>
+              </select>
+            </label>
+
+            <label>
+              Setor
+              <select id="reportSetor">
+                <option value="">Todos</option>
+              </select>
+            </label>
+
+            <label>
+              Função
+              <select id="reportFuncao">
+                <option value="">Todas</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="grid cols-4 mt-16">
+            <label>
+              Status
+              <select id="reportStatus">
+                <option value="">Todos</option>
+                <option value="ATIVO">Ativo</option>
+                <option value="INATIVO">Inativo</option>
+              </select>
+            </label>
+
+            <label>
+              Data inicial de associação
+              <input id="reportDataInicial" type="date" />
+            </label>
+
+            <label>
+              Data final de associação
+              <input id="reportDataFinal" type="date" />
+            </label>
+
+            <label>
+              Ordenar por
+              <select id="reportSortBy">
+                <option value="nome">Nome</option>
+                <option value="localTrabalho">Onde trabalha</option>
+                <option value="setor">Setor</option>
+                <option value="funcao">Função</option>
+              </select>
+            </label>
+          </div>
+
+          <p id="reportMessage" class="message mt-16"></p>
+        </section>
+
+        <section class="report-layout">
+          <section class="stats-privacy-card">
+            <div class="stats-grid assoc-summary-grid">
+              <article class="stat-card">
+                <span class="stat-label">Associados no relatório</span>
+                <strong id="reportTotal" class="stat-value">0</strong>
+              </article>
+
+              <article class="stat-card">
+                <span class="stat-label">Ativos</span>
+                <strong id="reportAtivos" class="stat-value">0</strong>
+              </article>
+
+              <article class="stat-card">
+                <span class="stat-label">Inativos</span>
+                <strong id="reportInativos" class="stat-value">0</strong>
+              </article>
+
+              <article class="stat-card">
+                <span class="stat-label">Gerado em</span>
+                <strong id="reportGeneratedAt" class="stat-value">-</strong>
+              </article>
+            </div>
+          </section>
+
+          <div class="report-group-grid">
+            <section class="card report-card">
+              <div class="section-head">
+                <div>
+                  <h2>Por onde trabalha</h2>
+                  <p class="muted">Quantidade por local.</p>
+                </div>
+              </div>
+              <div class="table-wrap">
+                <table>
+                  <thead><tr><th>Local</th><th>Total</th></tr></thead>
+                  <tbody id="reportByLocalBody"><tr><td colspan="2">Gere o relatório.</td></tr></tbody>
+                </table>
+              </div>
+            </section>
+
+            <section class="card report-card">
+              <div class="section-head">
+                <div>
+                  <h2>Por setor</h2>
+                  <p class="muted">Quantidade por setor.</p>
+                </div>
+              </div>
+              <div class="table-wrap">
+                <table>
+                  <thead><tr><th>Setor</th><th>Total</th></tr></thead>
+                  <tbody id="reportBySetorBody"><tr><td colspan="2">Gere o relatório.</td></tr></tbody>
+                </table>
+              </div>
+            </section>
+
+            <section class="card report-card">
+              <div class="section-head">
+                <div>
+                  <h2>Por função</h2>
+                  <p class="muted">Ex.: motorista, professor.</p>
+                </div>
+              </div>
+              <div class="table-wrap">
+                <table>
+                  <thead><tr><th>Função</th><th>Total</th></tr></thead>
+                  <tbody id="reportByFuncaoBody"><tr><td colspan="2">Gere o relatório.</td></tr></tbody>
+                </table>
+              </div>
+            </section>
+          </div>
+
+          <section class="card">
             <div class="section-head">
-              <h2>Usuários do sistema</h2>
-              <button id="usersRefreshBtn" class="btn btn-secondary" type="button">Atualizar usuários</button>
+              <div>
+                <h2>Lista do relatório</h2>
+                <p id="reportListCount" class="muted">Nenhum relatório carregado.</p>
+              </div>
             </div>
 
-            <div class="table-wrap mt-16">
+            <div class="table-wrap">
               <table>
                 <thead>
                   <tr>
                     <th>Nome</th>
-                    <th>Login</th>
-                    <th>Perfil</th>
+                    <th>CPF</th>
+                    <th>Telefone</th>
+                    <th>Onde trabalha</th>
+                    <th>Setor</th>
+                    <th>Função</th>
                     <th>Status</th>
-                    <th>Ações</th>
                   </tr>
                 </thead>
-                <tbody id="usersTableBody"></tbody>
+                <tbody id="reportMembersBody">
+                  <tr><td colspan="7">Gere o relatório para visualizar a lista.</td></tr>
+                </tbody>
               </table>
             </div>
-          </div>
-        </div>
-      </section>
-
-      <section class="tab-panel" id="tab-auditoria">
-        <div class="card">
-          <div class="section-head">
-            <h2>Auditoria</h2>
-            <button id="auditRefreshBtn" class="btn btn-secondary" type="button">Atualizar auditoria</button>
-          </div>
-
-          <div class="table-wrap mt-16">
-            <table>
-              <thead>
-                <tr>
-                  <th>Data</th>
-                  <th>Usuário</th>
-                  <th>Ação</th>
-                  <th>Entidade</th>
-                  <th>Detalhes</th>
-                </tr>
-              </thead>
-              <tbody id="auditTableBody"></tbody>
-            </table>
-          </div>
-        </div>
+          </section>
+        </section>
       </section>
     </main>
-
-    <footer class="status-bar" aria-label="Status do sistema">
-      <span>ACEAP</span>
-      <span id="statusConnection">Conectado</span>
-      <span id="statusLastUpdate">Última atualização: -</span>
-      <span id="statusUser">Usuário: -</span>
-      <span id="statusPrivacy">Privacidade: ativa</span>
-    </footer>
   </div>
+
+  <datalist id="localTrabalhoList"></datalist>
+  <datalist id="setorList"></datalist>
+  <datalist id="funcaoList"></datalist>
 
   <script src="./assets/runtime-config.js"></script>
   <script src="./assets/api.js"></script>

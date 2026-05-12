@@ -1,11 +1,11 @@
 (function () {
   'use strict';
 
-  var API_URL = 'https://script.google.com/macros/s/AKfycbxq4imDxh7Cn7Uw08kQFwxPUVYMO28Fz-gIheqV_w0x_c6F_2A8iy54bXc1qAXc1rPuPQ/exec';
+  var API_URL = 'https://script.google.com/macros/s/AKfycbzj8iKNqpwi6V56jTdQN-U96sFaReCHkc6uHWX3h9daVXjkUC28ZidHZr5ugRPX8INoAg/exec';
 
-  window.SIND_RUNTIME_CONFIG = Object.assign({}, window.SIND_RUNTIME_CONFIG || {}, {
-    BUILD_VERSION: '2026-05-07-apps-script-v3',
+  window.ASSOC_RUNTIME_CONFIG = Object.assign({}, window.ASSOC_RUNTIME_CONFIG || {}, {
+    BUILD_VERSION: '2026-05-11-sinsermap-painel-site-institucional-v5',
     API_URL: API_URL,
-    UNION_NAME_FALLBACK: 'ACEAP - Associação Comercial e Empresarial de Além Paraíba'
+    UNION_NAME_FALLBACK: 'SINSERMAP - Sindicato dos Servidores Públicos Municipais de Além Paraíba'
   });
 }());
