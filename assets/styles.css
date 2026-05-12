@@ -96,13 +96,35 @@ label {
   box-shadow: var(--shadow-strong);
 }
 
-.login-logo {
+
+.login-building-thumb {
   display: block;
-  width: 300px;
-  max-width: 100%;
-  height: auto;
-  margin: 0 auto 18px;
+  width: 100%;
+  max-width: 240px;
+  height: 96px;
+  object-fit: cover;
+  object-position: center;
+  margin: 0 auto 14px;
+  border: 1px solid #d8ded7;
+  border-radius: 10px;
+  background: #ffffff;
+  box-shadow: var(--shadow);
 }
+
+.topbar-building-thumb {
+  display: block;
+  flex: 0 0 auto;
+  width: 150px;
+  height: 78px;
+  object-fit: cover;
+  object-position: center;
+  border: 1px solid var(--border-dark);
+  border-radius: 4px;
+  background: #ffffff;
+  box-shadow: var(--shadow);
+}
+
+
 
 .brand-badge {
   display: inline-flex;
@@ -160,26 +182,11 @@ h2 {
 .brand-lockup {
   display: flex;
   align-items: center;
-  gap: 18px;
+  gap: 14px;
+  flex-wrap: wrap;
 }
 
-.brand-mark {
-  display: grid;
-  place-items: center;
-  width: 300px;
-  height: 86px;
-  padding: 11px 18px;
-  border: 1px solid var(--border-dark);
-  border-radius: 4px;
-  background: #ffffff;
-  box-shadow: var(--shadow);
-}
 
-.brand-mark img {
-  display: block;
-  max-width: 100%;
-  height: auto;
-}
 
 .session-panel {
   display: grid;
@@ -734,10 +741,15 @@ a.link-btn {
     padding-right: 14px;
   }
 
-  .brand-mark {
-    width: 210px;
-    height: 70px;
-    padding: 8px 10px;
+  .topbar-building-thumb {
+    width: 112px;
+    height: 58px;
+  }
+
+  .login-building-thumb {
+    max-width: 190px;
+    height: 78px;
+    margin-bottom: 12px;
   }
 
   .topbar h1,
