@@ -1075,8 +1075,8 @@
 
     var payload = memberPayload();
 
-    if (!payload.nome || !payload.localTrabalho || !payload.setor || !payload.funcao) {
-      setMessage('memberMessage', 'Preencha nome, onde trabalha, setor e função/cargo.', 'error');
+    if (!payload.nome || !payload.funcao) {
+      setMessage('memberMessage', 'Preencha nome e função/cargo.', 'error');
       return;
     }
 

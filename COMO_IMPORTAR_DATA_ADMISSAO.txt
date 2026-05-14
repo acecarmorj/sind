@@ -1,0 +1,22 @@
+COMO IMPORTAR A DATA DE ADMISSÃO
+
+Arquivo preparado:
+dados/importar_data_admissao_extraida.txt
+
+Total extraído dos arquivos enviados: 454 associados com data de admissão.
+
+Passo a passo:
+1. Abra o sistema.
+2. Entre em Configuração.
+3. Vá na área "Importar data de admissão".
+4. Abra o arquivo dados/importar_data_admissao_extraida.txt.
+5. Copie todo o conteúdo.
+6. Cole no campo de importação.
+7. Clique em Importar.
+
+O sistema vai tentar localizar por:
+1. CPF, quando existir.
+2. Matrícula.
+3. Nome, quando for único.
+
+Neste arquivo extraído, a busca principal será pela Matrícula e pelo Nome, porque os arquivos enviados não trouxeram CPF nessa relação.

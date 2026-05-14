@@ -1440,14 +1440,6 @@ function validateMember_(member, members) {
     throw new Error('Informe o nome do associado.');
   }
 
-  if (!member.localTrabalho) {
-    throw new Error('Informe onde o associado trabalha.');
-  }
-
-  if (!member.setor) {
-    throw new Error('Informe o setor do associado.');
-  }
-
   if (!member.funcao) {
     throw new Error('Informe a função/cargo do associado.');
   }

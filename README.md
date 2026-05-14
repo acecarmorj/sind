@@ -28,13 +28,14 @@ assets/
   api.js
   runtime-config.js
   styles.css
-  sinsermap-logo.svg
-  painel-banner.svg
+  sede-sinsermap.jpg
 backend/
   Code.gs
   appsscript.json
 api.txt
 ```
+
+Este pacote já está limpo para publicação/uso, sem pasta `.git` e sem imagens antigas não utilizadas.
 
 A API está duplicada em:
 
@@ -186,3 +187,14 @@ O painel público é alimentado pela tela **Configuração** do `index.html`, na
 O arquivo `painel.html` é o site informativo público do SINSERMAP. Ele não exige login e mostra comunicados, agenda, documentos, atas, cursos, serviços e contato.
 
 O arquivo `index.html` continua sendo a área interna do sistema, com login, cadastro, consulta, relatórios e configuração.
+
+
+## Importação da data de admissão
+
+Este pacote inclui o arquivo:
+
+`dados/importar_data_admissao_extraida.txt`
+
+Ele foi montado a partir das planilhas enviadas e contém 454 associados com data de admissão.
+
+Use em **Configuração > Importar data de admissão**: abra o TXT, copie tudo e cole no campo de importação.
