@@ -9,6 +9,9 @@
     members: [],
     recentMembers: [],
     report: null,
+    reportPage: 1,
+    reportPageSize: 50,
+    reportActiveFuncao: '',
     users: [],
     publicItems: [],
     publicGroups: {},
@@ -174,6 +177,72 @@
     el.className = 'message' + (type ? ' ' + type : '');
   }
 
+  function setMemberEditMode(member) {
+    var memberId = String(member && member.id ? member.id : '').trim();
+    var memberName = String(member && member.nome ? member.nome : '').trim();
+    var notice = byId('memberEditNotice');
+    var nameEl = byId('memberEditName');
+    var submitBtn = byId('memberSubmitBtn');
+
+    if (notice) {
+      notice.classList.toggle('hidden', !memberId);
+    }
+
+    if (nameEl) {
+      nameEl.textContent = memberName || '-';
+    }
+
+    if (submitBtn) {
+      submitBtn.textContent = memberId ? 'Atualizar associado' : 'Salvar associado';
+    }
+  }
+
+  function setDuplicateNotice(duplicates) {
+    var notice = byId('memberDuplicateNotice');
+
+    if (!notice) return;
+
+    if (!duplicates || !duplicates.length) {
+      notice.classList.add('hidden');
+      notice.innerHTML = '';
+      return;
+    }
+
+    notice.classList.remove('hidden');
+    notice.innerHTML =
+      '<strong>Atenção: possível cadastro duplicado.</strong>' +
+      '<span>Confira antes de salvar. O sistema encontrou:</span>' +
+      '<ul>' +
+      duplicates.slice(0, 5).map(function (item) {
+        return '<li>' + escapeHtml(item.motivos.join(', ')) + ': ' +
+          escapeHtml(item.nome || '-') + ' — ' +
+          escapeHtml(item.funcao || '-') + '</li>';
+      }).join('') +
+      '</ul>';
+  }
+
+  function duplicateConfirmText(duplicates) {
+    return 'Possível cadastro duplicado encontrado:\n\n' +
+      duplicates.slice(0, 5).map(function (item) {
+        return '- ' + item.motivos.join(', ') + ': ' +
+          (item.nome || '-') + ' / ' + (item.funcao || '-');
+      }).join('\n') +
+      '\n\nDeseja salvar mesmo assim?';
+  }
+
+  async function confirmPossibleDuplicate(payload) {
+    var response = await api.postApi('member_duplicates', payload);
+    var duplicates = response.duplicates || [];
+
+    setDuplicateNotice(duplicates);
+
+    if (!duplicates.length) {
+      return true;
+    }
+
+    return window.confirm(duplicateConfirmText(duplicates));
+  }
+
   function clearMessages() {
     [
       'loginMessage',
@@ -290,13 +359,15 @@
 
   function badge(status) {
     var value = status || 'ATIVO';
-    return '<span class="badge ' + escapeHtml(value) + '">' + escapeHtml(value) + '</span>';
+    var safeValue = escapeHtml(value);
+    var noBreakLabel = safeValue.split('').join('&#8288;');
+    return '<span class="badge status-badge ' + safeValue + '" aria-label="' + safeValue + '">' + noBreakLabel + '</span>';
   }
 
   function memberRow(member, includeActions) {
     var cells = [
       escapeHtml(member.nome || '-'),
-      escapeHtml(formatCpf(member.cpf)),
+      escapeHtml(formatDate(member.dataAdmissao)),
       escapeHtml(formatPhone(member.telefone)),
       escapeHtml(member.localTrabalho || '-'),
       escapeHtml(member.setor || '-'),
@@ -306,9 +377,16 @@
 
     if (includeActions) {
       cells.push(
+        '<div class="actions member-row-actions">' +
         '<button class="btn btn-secondary" type="button" data-edit-member="' +
         escapeHtml(member.id) +
-        '">Editar</button>'
+        '">Editar</button>' +
+        '<button class="btn btn-secondary" type="button" data-delete-member="' +
+        escapeHtml(member.id) +
+        '" data-member-name="' +
+        escapeHtml(member.nome || '') +
+        '">Excluir</button>' +
+        '</div>'
       );
     }
 
@@ -322,6 +400,14 @@
       '</td><td>' + escapeHtml(item.total) + '</td></tr>';
   }
 
+  function functionGroupRow(item) {
+    var label = item.label || 'Não informado';
+    return '<tr class="report-function-row" data-report-funcao="' + escapeHtml(label) + '">' +
+      '<td>' + escapeHtml(label) + '</td>' +
+      '<td>' + escapeHtml(item.total) + '</td>' +
+      '</tr>';
+  }
+
   function renderDashboard(data) {
     var stats = data.stats || {};
     state.recentMembers = data.recentMembers || [];
@@ -330,8 +416,8 @@
     text('buildInfo', 'Usuário: ' + (state.user && state.user.nome ? state.user.nome : 'admin') + ' • ' + runtime.BUILD_VERSION);
     text('statTotal', stats.total || 0);
     text('statAtivos', stats.ativos || 0);
-    text('statLocais', stats.locaisTrabalho || 0);
-    text('statFuncoes', stats.funcoes || 0);
+    text('statInativos', stats.inativos || 0);
+    text('statGeneratedAt', formatDateTime(new Date().toISOString()));
 
     if (!state.recentMembers.length) {
       html('recentMembersBody', '<tr><td colspan="5">Nenhum associado cadastrado ainda.</td></tr>');
@@ -366,31 +452,90 @@
 
   function renderReport(report) {
     state.report = report || {};
-    var summary = state.report.summary || {};
+    state.reportPage = 1;
+    state.reportActiveFuncao = '';
+
     var groups = state.report.groups || {};
     var members = state.report.members || [];
 
-    text('reportTotal', summary.total || 0);
-    text('reportAtivos', summary.ativos || 0);
-    text('reportInativos', summary.inativos || 0);
-    text('reportGeneratedAt', formatDateTime(state.report.generatedAt));
-    text('reportListCount', members.length + ' associado(s) listado(s).');
-
-    html('reportByLocalBody', (groups.porLocalTrabalho || []).length ?
-      groups.porLocalTrabalho.map(groupRow).join('') :
-      '<tr><td colspan="2">Sem dados.</td></tr>');
-
-    html('reportBySetorBody', (groups.porSetor || []).length ?
-      groups.porSetor.map(groupRow).join('') :
-      '<tr><td colspan="2">Sem dados.</td></tr>');
+    renderReportMembers(members, '');
 
     html('reportByFuncaoBody', (groups.porFuncao || []).length ?
-      groups.porFuncao.map(groupRow).join('') :
+      groups.porFuncao.map(functionGroupRow).join('') :
       '<tr><td colspan="2">Sem dados.</td></tr>');
+  }
 
-    html('reportMembersBody', members.length ?
-      members.map(function (member) { return memberRow(member, false); }).join('') :
-      '<tr><td colspan="7">Nenhum associado encontrado para o relatório.</td></tr>');
+  function renderReportMembers(members, funcao) {
+    var filteredMembers = members || [];
+    var pageSize = Number(value('reportPageSize') || state.reportPageSize || 50);
+
+    state.reportActiveFuncao = funcao || '';
+    state.reportPageSize = pageSize > 0 ? pageSize : 50;
+
+    if (funcao) {
+      filteredMembers = filteredMembers.filter(function (member) {
+        return normalizeText(member.funcao || 'Não informado') === normalizeText(funcao);
+      });
+    }
+
+    var total = filteredMembers.length;
+    var totalPages = Math.max(1, Math.ceil(total / state.reportPageSize));
+
+    if (state.reportPage < 1) {
+      state.reportPage = 1;
+    }
+
+    if (state.reportPage > totalPages) {
+      state.reportPage = totalPages;
+    }
+
+    var startIndex = (state.reportPage - 1) * state.reportPageSize;
+    var pageMembers = filteredMembers.slice(startIndex, startIndex + state.reportPageSize);
+    var rangeLabel = total ?
+      ' Mostrando ' + (startIndex + 1) + '-' + (startIndex + pageMembers.length) + ' de ' + total + '.' :
+      '';
+
+    text(
+      'reportListCount',
+      total + ' associado(s) listado(s).' +
+      (funcao ? ' Função: ' + funcao + '.' : '') +
+      rangeLabel
+    );
+
+    text('reportPageInfo', 'Página ' + state.reportPage + ' de ' + totalPages);
+
+    var previousButton = byId('reportPrevPageBtn');
+    var nextButton = byId('reportNextPageBtn');
+
+    if (previousButton) {
+      previousButton.disabled = state.reportPage <= 1;
+    }
+
+    if (nextButton) {
+      nextButton.disabled = state.reportPage >= totalPages;
+    }
+
+    html('reportMembersBody', pageMembers.length ?
+      pageMembers.map(function (member) { return memberRow(member, true); }).join('') :
+      '<tr><td colspan="8">Nenhum associado encontrado para o relatório.</td></tr>');
+  }
+
+  function rerenderReportPage() {
+    renderReportMembers(
+      state.report && state.report.members ? state.report.members : [],
+      state.reportActiveFuncao
+    );
+  }
+
+  function changeReportPage(direction) {
+    state.reportPage += direction;
+    rerenderReportPage();
+  }
+
+  function changeReportPageSize() {
+    state.reportPage = 1;
+    state.reportPageSize = Number(value('reportPageSize') || 50);
+    rerenderReportPage();
   }
 
   function resetMemberForm() {
@@ -400,6 +545,7 @@
       'memberCpf',
       'memberRg',
       'memberDataNascimento',
+      'memberDataAdmissao',
       'memberTelefone',
       'memberEmail',
       'memberEndereco',
@@ -417,8 +563,11 @@
     setValue('memberCidade', 'Além Paraíba');
     setValue('memberUf', 'MG');
     setValue('memberDataAssociacao', today());
+    setValue('memberDataAdmissao', '');
     setValue('memberStatus', 'ATIVO');
     setMessage('memberMessage', '');
+    setDuplicateNotice([]);
+    setMemberEditMode({});
   }
 
   function memberPayload() {
@@ -428,6 +577,7 @@
       cpf: value('memberCpf'),
       rg: value('memberRg'),
       dataNascimento: value('memberDataNascimento'),
+      dataAdmissao: value('memberDataAdmissao'),
       telefone: value('memberTelefone'),
       email: value('memberEmail'),
       endereco: value('memberEndereco'),
@@ -451,6 +601,7 @@
     setValue('memberCpf', formatCpf(member.cpf));
     setValue('memberRg', member.rg);
     setValue('memberDataNascimento', member.dataNascimento);
+    setValue('memberDataAdmissao', member.dataAdmissao);
     setValue('memberTelefone', member.telefone);
     setValue('memberEmail', member.email);
     setValue('memberEndereco', member.endereco);
@@ -465,11 +616,15 @@
     setValue('memberDataAssociacao', member.dataAssociacao);
     setValue('memberStatus', member.status || 'ATIVO');
     setValue('memberObservacoes', member.observacoes);
+    setDuplicateNotice([]);
+    setMemberEditMode(member || {});
   }
 
   function queryFilters(prefix) {
     return {
       search: value(prefix + 'Search'),
+      nome: value(prefix + 'Nome'),
+      cpf: value(prefix + 'Cpf'),
       localTrabalho: value(prefix + 'LocalTrabalho'),
       setor: value(prefix + 'Setor'),
       funcao: value(prefix + 'Funcao'),
@@ -517,15 +672,35 @@
     }
   }
 
+  function clearReportFilters() {
+    [
+      'reportNome',
+      'reportCpf',
+      'reportLocalTrabalho',
+      'reportSetor',
+      'reportFuncao',
+      'reportStatus',
+      'reportDataInicial',
+      'reportDataFinal'
+    ].forEach(function (id) {
+      setValue(id, '');
+    });
+
+    setValue('reportSortBy', 'nome');
+    state.reportPage = 1;
+    loadReport();
+  }
+
   async function loadReport() {
     clearMessages();
 
     try {
+      state.reportPage = 1;
       var response = await api.getApi('reports_associados', queryFilters('report'));
       renderReport(response.report || {});
-      setMessage('reportMessage', 'Relatório gerado com sucesso.', 'success');
+      setMessage('reportMessage', 'Consulta carregada com sucesso.', 'success');
     } catch (error) {
-      setMessage('reportMessage', error.message || 'Falha ao gerar relatório.', 'error');
+      setMessage('reportMessage', error.message || 'Falha ao consultar associados.', 'error');
     }
   }
 
@@ -696,8 +871,57 @@
     setMessage('publicConfigMessage', '');
   }
 
+
+  function renderHomeAgenda(items) {
+    if (!byId('homeAgendaList')) {
+      return;
+    }
+
+    var today = new Date();
+    var todayKey = today.toISOString().slice(0, 10);
+
+    var agendaItems = (items || []).filter(function (item) {
+      return item.tipo === 'agenda' &&
+        String(item.status || 'ATIVO').toUpperCase() === 'ATIVO' &&
+        (!item.data || item.data >= todayKey);
+    }).sort(function (a, b) {
+      var dateA = a.data || '9999-12-31';
+      var dateB = b.data || '9999-12-31';
+
+      if (dateA !== dateB) return dateA < dateB ? -1 : 1;
+
+      return normalizeText(a.titulo || '') < normalizeText(b.titulo || '') ? -1 : 1;
+    }).slice(0, 5);
+
+    if (!agendaItems.length) {
+      html('homeAgendaList',
+        '<div class="home-agenda-empty">' +
+          '<strong>Nenhum compromisso publicado.</strong>' +
+          '<span>Cadastre agenda em Configurações > Painel público para aparecer aqui.</span>' +
+        '</div>');
+      return;
+    }
+
+    html('homeAgendaList', agendaItems.map(function (item) {
+      var meta = [formatDate(item.data), item.horario, item.local].filter(Boolean).join(' • ');
+
+      return '<article class="home-agenda-item">' +
+        '<div class="home-agenda-date">' +
+          '<strong>' + escapeHtml(item.data ? formatDate(item.data).slice(0, 5) : '--/--') + '</strong>' +
+          '<span>' + escapeHtml(item.data ? formatDate(item.data).slice(6) : 'Data') + '</span>' +
+        '</div>' +
+        '<div class="home-agenda-info">' +
+          '<strong>' + escapeHtml(item.titulo || 'Compromisso') + '</strong>' +
+          '<span>' + escapeHtml(meta || 'Data a confirmar') + '</span>' +
+          (item.descricao ? '<p>' + escapeHtml(item.descricao) + '</p>' : '') +
+        '</div>' +
+      '</article>';
+    }).join(''));
+  }
+
   function renderPublicItemsAdmin(items) {
     state.publicItems = items || [];
+    renderHomeAgenda(state.publicItems);
 
     if (!byId('publicItemsBody')) {
       return;
@@ -820,18 +1044,20 @@
   }
 
 
+  async function loadBootstrap() {
+    var response = await api.getApi('app_bootstrap');
+
+    fillOptions(response.options || {});
+    renderUsers(response.users || []);
+    renderPublicItemsAdmin(response.publicItems || []);
+    renderDashboard(response.dashboard || {});
+  }
+
   async function refreshAll() {
     clearMessages();
 
     try {
-      await loadOptions();
-      await loadUsers();
-      await loadPublicItemsAdmin();
-      await loadDashboard();
-
-      if (byId('tab-consulta').classList.contains('active')) {
-        await searchMembers();
-      }
+      await loadBootstrap();
 
       if (byId('tab-relatorios').classList.contains('active')) {
         await loadReport();
@@ -855,13 +1081,17 @@
     }
 
     try {
+      var canSave = await confirmPossibleDuplicate(payload);
+
+      if (!canSave) {
+        setMessage('memberMessage', 'Salvamento cancelado para conferência do possível duplicado.', 'error');
+        return;
+      }
+
       var response = await api.postApi('member_save', payload);
       fillMemberForm(response.member);
-      setMessage('memberMessage', 'Associado salvo com sucesso.', 'success');
-      await loadOptions();
-      await loadUsers();
-      await loadPublicItemsAdmin();
-      await loadDashboard();
+      setMessage('memberMessage', payload.id ? 'Associado atualizado com sucesso.' : 'Associado salvo com sucesso.', 'success');
+      await loadBootstrap();
     } catch (error) {
       setMessage('memberMessage', error.message || 'Falha ao salvar associado.', 'error');
     }
@@ -870,13 +1100,53 @@
   async function editMember(id) {
     clearMessages();
 
+    if (!id) {
+      setMessage('memberMessage', 'Associado não informado para edição.', 'error');
+      return;
+    }
+
+    activateTab('cadastro');
+    setMessage('memberMessage', 'Carregando cadastro para edição...', 'success');
+
     try {
       var response = await api.getApi('member_get', { id: id });
       fillMemberForm(response.member || {});
-      activateTab('cadastro');
-      setMessage('memberMessage', 'Cadastro carregado para edição.', 'success');
+
+      var nomeInput = byId('memberNome');
+      if (nomeInput) {
+        nomeInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        nomeInput.focus();
+      }
+
+      setMessage('memberMessage', 'Editando associado: ' + (response.member && response.member.nome ? response.member.nome : '-'), 'success');
     } catch (error) {
-      setMessage('consultMessage', error.message || 'Falha ao carregar associado.', 'error');
+      setMessage('memberMessage', error.message || 'Falha ao carregar associado.', 'error');
+    }
+  }
+
+  async function deleteMember(id, name) {
+    clearMessages();
+
+    if (!id) {
+      setMessage('reportMessage', 'Associado não informado para exclusão.', 'error');
+      return;
+    }
+
+    if (!window.confirm('Excluir o associado "' + (name || 'selecionado') + '"?')) {
+      return;
+    }
+
+    try {
+      await api.postApi('member_delete', { id: id });
+      await loadDashboard();
+
+      if (byId('tab-relatorios') && byId('tab-relatorios').classList.contains('active')) {
+        await loadReport();
+      }
+
+      setMessage('reportMessage', 'Associado excluído com sucesso.', 'success');
+    } catch (error) {
+      setMessage('reportMessage', error.message || 'Falha ao excluir associado.', 'error');
     }
   }
 
@@ -1132,7 +1402,11 @@
       return row.map(csvEscape).join(';');
     }).join('\n');
 
-    var blob = new Blob(['\ufeff' + content], { type: 'text/csv;charset=utf-8;' });
+    downloadTextFile(filename, '\ufeff' + content, 'text/csv;charset=utf-8;');
+  }
+
+  function downloadTextFile(filename, content, type) {
+    var blob = new Blob([content], { type: type || 'text/plain;charset=utf-8;' });
     var link = document.createElement('a');
 
     link.href = URL.createObjectURL(blob);
@@ -1141,9 +1415,221 @@
     URL.revokeObjectURL(link.href);
   }
 
+  function fileStamp() {
+    var date = new Date();
+    var pad = function (value) {
+      return String(value).padStart(2, '0');
+    };
+
+    return date.getFullYear() +
+      pad(date.getMonth() + 1) +
+      pad(date.getDate()) +
+      '_' +
+      pad(date.getHours()) +
+      pad(date.getMinutes());
+  }
+
+  function downloadExcel(filename, rows) {
+    if (!rows.length) {
+      setMessage('globalMessage', 'Não há dados para exportar.', 'error');
+      return;
+    }
+
+    var tableRows = rows.map(function (row) {
+      return '<tr>' + row.map(function (cell) {
+        return '<td>' + escapeHtml(cell == null ? '' : cell) + '</td>';
+      }).join('') + '</tr>';
+    }).join('');
+
+    var content =
+      '<!DOCTYPE html><html><head><meta charset="UTF-8" /></head><body>' +
+      '<table border="1">' + tableRows + '</table>' +
+      '</body></html>';
+
+    downloadTextFile(filename, content, 'application/vnd.ms-excel;charset=utf-8;');
+  }
+
+  function downloadJson(filename, data) {
+    downloadTextFile(
+      filename,
+      JSON.stringify(data, null, 2),
+      'application/json;charset=utf-8;'
+    );
+  }
+
+
+  function splitImportLine(line) {
+    var tabCount = (line.match(/\t/g) || []).length;
+    var semicolonCount = (line.match(/;/g) || []).length;
+    var commaCount = (line.match(/,/g) || []).length;
+    var separator = '\t';
+
+    if (tabCount === 0 && semicolonCount >= commaCount) {
+      separator = ';';
+    } else if (tabCount === 0 && commaCount > semicolonCount) {
+      separator = ',';
+    }
+
+    return line.split(separator).map(function (cell) {
+      return String(cell || '').trim();
+    });
+  }
+
+  function importHeaderKey(value) {
+    var normalized = normalizeText(value).replace(/[^a-z0-9]/g, '');
+
+    if (normalized === 'nome' || normalized === 'nomecompleto' || normalized === 'associado') {
+      return 'nome';
+    }
+
+    if (normalized === 'cpf') {
+      return 'cpf';
+    }
+
+    if (normalized === 'matricula' || normalized === 'matriculafuncional') {
+      return 'matricula';
+    }
+
+    if (normalized === 'datadeadmissao' || normalized === 'dataadmissao' || normalized === 'admissao') {
+      return 'dataAdmissao';
+    }
+
+    return '';
+  }
+
+  function parseAdmissionImport(rawText) {
+    var lines = String(rawText || '')
+      .split(/\r?\n/)
+      .map(function (line) { return line.trim(); })
+      .filter(Boolean);
+
+    if (!lines.length) {
+      return [];
+    }
+
+    var firstColumns = splitImportLine(lines[0]);
+    var headerKeys = firstColumns.map(importHeaderKey);
+    var hasHeader = headerKeys.indexOf('dataAdmissao') >= 0 &&
+      (headerKeys.indexOf('cpf') >= 0 || headerKeys.indexOf('matricula') >= 0 || headerKeys.indexOf('nome') >= 0);
+
+    var indexes = hasHeader ? {
+      nome: -1,
+      cpf: -1,
+      matricula: -1,
+      dataAdmissao: -1
+    } : {
+      nome: 0,
+      cpf: 1,
+      matricula: 2,
+      dataAdmissao: 3
+    };
+
+    if (hasHeader) {
+      headerKeys.forEach(function (key, index) {
+        if (key) {
+          indexes[key] = index;
+        }
+      });
+      lines = lines.slice(1);
+    }
+
+    function columnValue(columns, index) {
+      return index >= 0 ? columns[index] || '' : '';
+    }
+
+    return lines.map(function (line) {
+      var columns = splitImportLine(line);
+
+      return {
+        nome: columnValue(columns, indexes.nome),
+        cpf: columnValue(columns, indexes.cpf),
+        matricula: columnValue(columns, indexes.matricula),
+        dataAdmissao: columnValue(columns, indexes.dataAdmissao)
+      };
+    }).filter(function (row) {
+      return row.nome || row.cpf || row.matricula || row.dataAdmissao;
+    });
+  }
+
+  function renderAdmissionImportResult(result) {
+    if (!result) {
+      byId('admissionImportResult').classList.add('hidden');
+      html('admissionImportResult', '');
+      return;
+    }
+
+    var details = [];
+
+    if (result.notFound && result.notFound.length) {
+      details.push('<strong>Não encontrados:</strong> ' + escapeHtml(result.notFound.slice(0, 8).join(', ')));
+    }
+
+    if (result.ambiguous && result.ambiguous.length) {
+      details.push('<strong>Duplicados/ambíguos:</strong> ' + escapeHtml(result.ambiguous.slice(0, 8).join(', ')));
+    }
+
+    if (result.invalidDates && result.invalidDates.length) {
+      details.push('<strong>Datas inválidas:</strong> ' + escapeHtml(result.invalidDates.slice(0, 8).join(', ')));
+    }
+
+    byId('admissionImportResult').classList.remove('hidden');
+    html('admissionImportResult',
+      '<div class="import-result-grid">' +
+        '<span><strong>' + escapeHtml(result.total || 0) + '</strong> linha(s) lida(s)</span>' +
+        '<span><strong>' + escapeHtml(result.updated || 0) + '</strong> atualizada(s)</span>' +
+        '<span><strong>' + escapeHtml(result.skipped || 0) + '</strong> não atualizada(s)</span>' +
+      '</div>' +
+      (details.length ? '<div class="import-result-details">' + details.map(function (item) {
+        return '<p>' + item + '</p>';
+      }).join('') + '</div>' : '')
+    );
+  }
+
+  function clearAdmissionImport() {
+    setValue('admissionImportText', '');
+    setMessage('admissionImportMessage', '');
+    renderAdmissionImportResult(null);
+  }
+
+  async function importAdmissionDates(event) {
+    event.preventDefault();
+    clearMessages();
+
+    var rows = parseAdmissionImport(value('admissionImportText'));
+
+    if (!rows.length) {
+      setMessage('admissionImportMessage', 'Cole os dados da planilha antes de importar.', 'error');
+      return;
+    }
+
+    if (!window.confirm('Importar data de admissão para ' + rows.length + ' linha(s)?')) {
+      return;
+    }
+
+    setMessage('admissionImportMessage', 'Importando datas de admissão...', 'success');
+
+    try {
+      var response = await api.postApi('member_admission_import', {
+        rows: rows
+      });
+
+      renderAdmissionImportResult(response.result);
+      setMessage('admissionImportMessage', 'Importação concluída.', 'success');
+      await loadBootstrap();
+
+      if (byId('tab-relatorios').classList.contains('active')) {
+        await loadReport();
+      }
+    } catch (error) {
+      setMessage('admissionImportMessage', error.message || 'Falha ao importar datas de admissão.', 'error');
+    }
+  }
+
+
   function memberCsvRows(members) {
     var rows = [[
       'Nome',
+      'Data de admissão',
       'CPF',
       'RG',
       'Telefone',
@@ -1160,6 +1646,7 @@
     members.forEach(function (member) {
       rows.push([
         member.nome,
+        formatDate(member.dataAdmissao),
         formatCpf(member.cpf),
         member.rg,
         formatPhone(member.telefone),
@@ -1181,9 +1668,191 @@
     downloadCsv('consulta_associados.csv', memberCsvRows(state.members || []));
   }
 
-  function exportReportCsv() {
+  function exportReportExcel() {
     var members = state.report && state.report.members ? state.report.members : [];
-    downloadCsv('relatorio_associados.csv', memberCsvRows(members));
+
+    if (!members.length) {
+      setMessage('reportMessage', 'Busque um relatório antes de exportar.', 'error');
+      return;
+    }
+
+    downloadExcel('relatorio_associados_' + fileStamp() + '.xls', memberCsvRows(members));
+    setMessage('reportMessage', 'Relatório exportado em Excel.', 'success');
+  }
+
+  function exportReportCsv() {
+    exportReportExcel();
+  }
+
+  function filteredReportMembers() {
+    var members = state.report && state.report.members ? state.report.members.slice() : [];
+
+    if (!state.reportActiveFuncao) {
+      return members;
+    }
+
+    return members.filter(function (member) {
+      return normalizeText(member.funcao || 'Não informado') === normalizeText(state.reportActiveFuncao);
+    });
+  }
+
+  function reportStatusTotals(members) {
+    return (members || []).reduce(function (acc, member) {
+      var status = normalizeText(member && member.status ? member.status : '');
+
+      if (status === 'ativo') {
+        acc.ativos += 1;
+      } else if (status === 'inativo') {
+        acc.inativos += 1;
+      }
+
+      return acc;
+    }, { ativos: 0, inativos: 0 });
+  }
+
+  function reportFilterSummaryItems() {
+    var items = [];
+    var nome = value('reportNome');
+    var cpf = formatCpf(value('reportCpf'));
+    var localTrabalho = value('reportLocalTrabalho');
+    var setor = value('reportSetor');
+    var funcao = state.reportActiveFuncao || value('reportFuncao');
+    var status = value('reportStatus');
+    var dataInicial = value('reportDataInicial');
+    var dataFinal = value('reportDataFinal');
+
+    if (nome) items.push(['Nome', nome]);
+    if (cpf && cpf !== '-') items.push(['CPF', cpf]);
+    if (localTrabalho) items.push(['Onde trabalha', localTrabalho]);
+    if (setor) items.push(['Setor', setor]);
+    if (funcao) items.push(['Função', funcao]);
+    if (status) items.push(['Status', status === 'ATIVO' ? 'Ativo' : status === 'INATIVO' ? 'Inativo' : status]);
+    if (dataInicial || dataFinal) {
+      items.push(['Admissão', (dataInicial ? formatDate(dataInicial) : '...') + ' até ' + (dataFinal ? formatDate(dataFinal) : '...')]);
+    }
+
+    return items;
+  }
+
+  function buildReportPrintHtml(members) {
+    var generatedAt = formatDateTime(new Date().toISOString());
+    var imageUrl = new URL('./assets/sede-sinsermap.jpg', window.location.href).href;
+    var statusTotals = reportStatusTotals(members);
+    var uniqueFuncoes = {};
+    var filterItems = reportFilterSummaryItems();
+
+    members.forEach(function (member) {
+      var key = normalizeText(member.funcao || 'Não informado');
+      if (!uniqueFuncoes[key]) {
+        uniqueFuncoes[key] = member.funcao || 'Não informado';
+      }
+    });
+
+    var summaryCards = [
+      ['Total listado', members.length],
+      ['Ativos', statusTotals.ativos],
+      ['Inativos', statusTotals.inativos],
+      ['Funções', Object.keys(uniqueFuncoes).length]
+    ].map(function (item) {
+      return '<div class="summary-card"><span>' + escapeHtml(item[0]) + '</span><strong>' + escapeHtml(item[1]) + '</strong></div>';
+    }).join('');
+
+    var filtersHtml = filterItems.length ?
+      '<section class="filter-box"><h3>Filtros aplicados</h3><div class="filter-grid">' +
+      filterItems.map(function (item) {
+        return '<div class="filter-item"><span>' + escapeHtml(item[0]) + '</span><strong>' + escapeHtml(item[1]) + '</strong></div>';
+      }).join('') +
+      '</div></section>' : '';
+
+    var rowsHtml = members.map(function (member) {
+      return '<tr>' +
+        '<td class="name-col">' + escapeHtml(member.nome || '-') + '</td>' +
+        '<td class="date-col">' + escapeHtml(formatDate(member.dataAdmissao)) + '</td>' +
+        '<td class="phone-col">' + escapeHtml(formatPhone(member.telefone)) + '</td>' +
+        '<td class="work-col">' + escapeHtml(member.localTrabalho || '-') + '</td>' +
+        '<td class="setor-col">' + escapeHtml(member.setor || '-') + '</td>' +
+        '<td class="funcao-col">' + escapeHtml(member.funcao || '-') + '</td>' +
+        '<td class="status-col"><span class="status-badge ' + escapeHtml(normalizeText(member.status || '')) + '">' + escapeHtml(member.status || '-') + '</span></td>' +
+      '</tr>';
+    }).join('');
+
+    return '<!DOCTYPE html>' +
+      '<html lang="pt-BR">' +
+      '<head>' +
+      '<meta charset="UTF-8" />' +
+      '<meta name="viewport" content="width=device-width, initial-scale=1.0" />' +
+      '<title>Relatório de Associados - SINSERMAP</title>' +
+      '<style>' +
+      '@page { size: A4 landscape; margin: 14mm 10mm 16mm; }' +
+      ':root { color-scheme: light; --green:#2f6f46; --green-dark:#245639; --green-soft:#edf5ef; --gold:#c8a23a; --text:#20313a; --muted:#5f6f79; --border:#d7dfe3; }' +
+      '* { box-sizing:border-box; }' +
+      'html,body { margin:0; padding:0; color:var(--text); font-family:Segoe UI, Tahoma, Arial, sans-serif; font-size:12px; background:#fff; }' +
+      'body { -webkit-print-color-adjust:exact; print-color-adjust:exact; }' +
+      '.page { width:100%; }' +
+      '.report-header { display:grid; grid-template-columns: 170px 1fr; gap:14px; align-items:stretch; padding:0 0 12px; border-bottom:2px solid var(--green); }' +
+      '.header-figure img { display:block; width:100%; height:110px; object-fit:cover; border-radius:10px; border:1px solid #d8dfdb; }' +
+      '.header-copy { display:flex; flex-direction:column; justify-content:center; }' +
+      '.kicker { color:var(--green); font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.08em; margin-bottom:6px; }' +
+      '.header-copy h1 { margin:0; color:var(--green-dark); font-size:28px; line-height:1.1; }' +
+      '.header-copy h2 { margin:2px 0 8px; color:#2b3941; font-size:15px; font-weight:600; }' +
+      '.header-copy p { margin:0; color:var(--muted); line-height:1.45; }' +
+      '.header-meta { margin-top:10px; display:flex; gap:14px; flex-wrap:wrap; color:#4c5d66; font-size:11px; }' +
+      '.summary-grid { display:grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap:10px; margin:12px 0; }' +
+      '.summary-card { padding:10px 12px; border:1px solid var(--border); border-left:4px solid var(--green); border-radius:8px; background:#fff; }' +
+      '.summary-card span { display:block; color:var(--muted); font-size:11px; text-transform:uppercase; letter-spacing:.03em; }' +
+      '.summary-card strong { display:block; margin-top:4px; color:var(--text); font-size:22px; line-height:1.05; }' +
+      '.filter-box { margin:0 0 12px; padding:10px 12px; background:var(--green-soft); border:1px solid #dbe7dd; border-radius:8px; }' +
+      '.filter-box h3 { margin:0 0 8px; color:var(--green-dark); font-size:13px; }' +
+      '.filter-grid { display:grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap:8px 12px; }' +
+      '.filter-item { display:grid; gap:2px; }' +
+      '.filter-item span { color:var(--muted); font-size:10px; text-transform:uppercase; letter-spacing:.03em; }' +
+      '.filter-item strong { color:var(--text); font-size:12px; }' +
+      'table { width:100%; border-collapse:collapse; table-layout:fixed; }' +
+      'thead th { padding:8px 8px; text-align:left; color:#fff; background:var(--green); border:1px solid var(--green-dark); font-size:11px; }' +
+      'tbody td { padding:7px 8px; border:1px solid var(--border); vertical-align:top; color:#25353d; word-break:break-word; white-space:normal; }' +
+      'tbody tr:nth-child(even) td { background:#fafcfa; }' +
+      '.name-col { width:22%; font-weight:600; } .date-col { width:10%; } .phone-col { width:11%; } .work-col { width:16%; } .setor-col { width:13%; } .funcao-col { width:20%; } .status-col { width:8%; }' +
+      '.status-badge { display:inline-block; min-width:68px; padding:4px 8px; border-radius:999px; text-align:center; font-size:10px; font-weight:700; white-space:nowrap; }' +
+      '.status-badge.ativo { background:#e9f5ed; color:#215537; border:1px solid #cde2d4; }' +
+      '.status-badge.inativo { background:#f7eded; color:#8f3932; border:1px solid #e4c5c2; }' +
+      '.report-footer { position:fixed; left:0; right:0; bottom:0; padding:6px 10mm 0; border-top:1px solid #d8e0dc; color:#5b6a72; font-size:10px; background:#fff; }' +
+      '.report-footer-inner { display:flex; justify-content:space-between; gap:12px; }' +
+      '.empty-note { padding:18px; border:1px dashed #cfd7db; border-radius:8px; color:#5e6d75; text-align:center; }' +
+      '</style>' +
+      '</head>' +
+      '<body>' +
+      '<div class="page">' +
+      '<header class="report-header">' +
+      '<div class="header-figure"><img src="' + escapeHtml(imageUrl) + '" alt="Sede do SINSERMAP" /></div>' +
+      '<div class="header-copy">' +
+      '<span class="kicker">SINSERMAP</span>' +
+      '<h1>Sindicato dos Servidores Públicos Municipais de Além Paraíba</h1>' +
+      '<h2>Relatório de associados</h2>' +
+      '<p>Documento gerado pelo sistema interno para consulta, conferência e apoio administrativo.</p>' +
+      '<div class="header-meta">' +
+      '<span><strong>Gerado em:</strong> ' + escapeHtml(generatedAt) + '</span>' +
+      '<span><strong>Usuário:</strong> ' + escapeHtml(state.user && (state.user.nome || state.user.username) || 'Sistema') + '</span>' +
+      '</div>' +
+      '</div>' +
+      '</header>' +
+      '<section class="summary-grid">' + summaryCards + '</section>' +
+      filtersHtml +
+      (members.length ? '<table><thead><tr><th class="name-col">Nome</th><th class="date-col">Admissão</th><th class="phone-col">Telefone</th><th class="work-col">Onde trabalha</th><th class="setor-col">Setor</th><th class="funcao-col">Função</th><th class="status-col">Status</th></tr></thead><tbody>' + rowsHtml + '</tbody></table>' : '<div class="empty-note">Nenhum associado encontrado para os filtros informados.</div>') +
+      '</div>' +
+      '<footer class="report-footer"><div class="report-footer-inner"><span>SINSERMAP • Cadastro de Associados</span><span>Relatório gerado em ' + escapeHtml(generatedAt) + '</span></div></footer>' +
+      '</body></html>';
+  }
+
+  async function downloadFullBackup() {
+    setMessage('reportMessage', 'Gerando backup completo...', 'success');
+
+    try {
+      var response = await api.getApi('backup_full');
+      downloadJson('backup_sinsermap_' + fileStamp() + '.json', response.backup);
+      setMessage('reportMessage', 'Backup completo gerado com sucesso.', 'success');
+    } catch (error) {
+      setMessage('reportMessage', error.message || 'Falha ao gerar backup.', 'error');
+    }
   }
 
   function printReport() {
@@ -1192,7 +1861,24 @@
       return;
     }
 
-    window.print();
+    var members = filteredReportMembers();
+    var printWindow = window.open('', '_blank', 'width=1200,height=900');
+
+    if (!printWindow) {
+      setMessage('reportMessage', 'Não foi possível abrir a janela de impressão. Verifique se o navegador bloqueou pop-ups.', 'error');
+      return;
+    }
+
+    printWindow.document.open();
+    printWindow.document.write(buildReportPrintHtml(members));
+    printWindow.document.close();
+
+    printWindow.onload = function () {
+      printWindow.focus();
+      setTimeout(function () {
+        printWindow.print();
+      }, 250);
+    };
   }
 
   async function handleLogin(event) {
@@ -1270,15 +1956,58 @@
     }
     byId('memberForm').addEventListener('submit', saveMember);
     byId('userForm').addEventListener('submit', saveUser);
+
+    if (byId('admissionImportForm')) {
+      byId('admissionImportForm').addEventListener('submit', importAdmissionDates);
+    }
+
+    if (byId('clearAdmissionImportBtn')) {
+      byId('clearAdmissionImportBtn').addEventListener('click', clearAdmissionImport);
+    }
+
     byId('newMemberBtn').addEventListener('click', resetMemberForm);
     byId('clearMemberBtn').addEventListener('click', resetMemberForm);
     byId('clearUserBtn').addEventListener('click', resetUserForm);
-    byId('searchMembersBtn').addEventListener('click', searchMembers);
-    byId('quickSearchForm').addEventListener('submit', quickSearch);
+    if (byId('searchMembersBtn')) {
+      byId('searchMembersBtn').addEventListener('click', searchMembers);
+    }
+    if (byId('quickSearchForm')) {
+      byId('quickSearchForm').addEventListener('submit', quickSearch);
+    }
     byId('loadReportBtn').addEventListener('click', loadReport);
+    if (byId('clearReportFiltersBtn')) {
+      byId('clearReportFiltersBtn').addEventListener('click', clearReportFilters);
+    }
     byId('printReportBtn').addEventListener('click', printReport);
-    byId('exportConsultCsvBtn').addEventListener('click', exportConsultCsv);
-    byId('exportReportCsvBtn').addEventListener('click', exportReportCsv);
+
+    if (byId('reportPrevPageBtn')) {
+      byId('reportPrevPageBtn').addEventListener('click', function () {
+        changeReportPage(-1);
+      });
+    }
+
+    if (byId('reportNextPageBtn')) {
+      byId('reportNextPageBtn').addEventListener('click', function () {
+        changeReportPage(1);
+      });
+    }
+
+    if (byId('reportPageSize')) {
+      byId('reportPageSize').addEventListener('change', changeReportPageSize);
+    }
+    if (byId('exportConsultCsvBtn')) {
+      byId('exportConsultCsvBtn').addEventListener('click', exportConsultCsv);
+    }
+
+    if (byId('exportReportExcelBtn')) {
+      byId('exportReportExcelBtn').addEventListener('click', exportReportExcel);
+    } else if (byId('exportReportCsvBtn')) {
+      byId('exportReportCsvBtn').addEventListener('click', exportReportCsv);
+    }
+
+    if (byId('backupFullBtn')) {
+      byId('backupFullBtn').addEventListener('click', downloadFullBackup);
+    }
 
     Object.keys(OPTION_CONFIG).forEach(function (type) {
       var config = OPTION_CONFIG[type];
@@ -1310,6 +2039,26 @@
       var editButton = event.target.closest('[data-edit-member]');
       if (editButton) {
         editMember(editButton.getAttribute('data-edit-member'));
+        return;
+      }
+
+      var deleteMemberButton = event.target.closest('[data-delete-member]');
+      if (deleteMemberButton) {
+        deleteMember(
+          deleteMemberButton.getAttribute('data-delete-member'),
+          deleteMemberButton.getAttribute('data-member-name')
+        );
+        return;
+      }
+
+      var reportFunctionRow = event.target.closest('[data-report-funcao]');
+      if (reportFunctionRow) {
+        document.querySelectorAll('[data-report-funcao]').forEach(function (row) {
+          row.classList.remove('is-selected');
+        });
+        reportFunctionRow.classList.add('is-selected');
+        state.reportPage = 1;
+        renderReportMembers(state.report && state.report.members ? state.report.members : [], reportFunctionRow.getAttribute('data-report-funcao'));
         return;
       }
 
@@ -1356,6 +2105,10 @@
     });
 
     ['filterSearch', 'filterLocalTrabalho', 'filterSetor', 'filterFuncao', 'filterStatus'].forEach(function (id) {
+      if (!byId(id)) {
+        return;
+      }
+
       byId(id).addEventListener('keydown', function (event) {
         if (event.key === 'Enter') {
           event.preventDefault();
@@ -1366,26 +2119,42 @@
   }
 
   function startPhraseRotator() {
-    var phrases = [
-      'Controle os dados dos associados por local de trabalho, setor e função.',
-      'Use relatórios para localizar motoristas, professores e demais categorias.',
-      'Cadastros completos facilitam atendimento interno e prestação de informações.',
-      'Atualize setor e função sempre que o associado mudar de local de trabalho.'
+    var messages = [
+      {
+        title: 'Participação fortalece a categoria',
+        text: 'Juntos, os servidores têm mais força, voz e representação.'
+      },
+      {
+        title: 'Servidor valorizado, cidade mais forte',
+        text: 'Valorizar o servidor público é valorizar o atendimento, os serviços e a vida da comunidade.'
+      },
+      {
+        title: 'Informação também é proteção',
+        text: 'Servidor informado participa melhor das decisões e acompanha de perto os direitos da categoria.'
+      },
+      {
+        title: 'União transforma reivindicações em conquistas',
+        text: 'A força coletiva nasce da participação, do diálogo e da presença de cada servidor.'
+      },
+      {
+        title: 'O sindicato é ponto de encontro',
+        text: 'Aqui a categoria encontra orientação, informação e espaço para construir soluções em conjunto.'
+      },
+      {
+        title: 'Participar é cuidar do futuro',
+        text: 'Cada assembleia, curso e comunicado ajuda a manter a categoria mais próxima e organizada.'
+      },
+      {
+        title: 'Direitos precisam de presença',
+        text: 'A defesa dos servidores se fortalece quando a categoria acompanha, participa e se mantém unida.'
+      }
     ];
-    var index = 0;
-    var phraseEl = byId('managementPhrase');
+    var start = new Date(new Date().getFullYear(), 0, 0);
+    var day = Math.floor((new Date() - start) / 86400000);
+    var message = messages[day % messages.length];
 
-    if (!phraseEl) return;
-
-    window.setInterval(function () {
-      index = (index + 1) % phrases.length;
-      phraseEl.classList.add('is-changing');
-
-      window.setTimeout(function () {
-        phraseEl.textContent = phrases[index];
-        phraseEl.classList.remove('is-changing');
-      }, 180);
-    }, 6200);
+    text('dailyHomeTitle', message.title);
+    text('dailyHomeMessage', message.text);
   }
 
   document.addEventListener('DOMContentLoaded', function () {

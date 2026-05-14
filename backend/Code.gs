@@ -45,7 +45,8 @@ var MEMBER_HEADERS = [
   'status',
   'observacoes',
   'createdAt',
-  'updatedAt'
+  'updatedAt',
+  'dataAdmissao'
 ];
 
 var USER_HEADERS = [
@@ -199,6 +200,10 @@ function dispatch_(request) {
       requireSession_(request.sessionToken);
       return dashboard_();
 
+    case 'app_bootstrap':
+      requireSession_(request.sessionToken);
+      return appBootstrap_();
+
     case 'options':
       requireSession_(request.sessionToken);
       return {
@@ -271,15 +276,37 @@ function dispatch_(request) {
         member: getMemberById_(request.payload.id)
       };
 
+    case 'member_duplicates':
+      requireSession_(request.sessionToken);
+      return {
+        duplicates: findMemberDuplicates_(request.payload)
+      };
+
+    case 'member_admission_import':
+      return {
+        result: importMemberAdmissionDates_(request.payload, requireSession_(request.sessionToken))
+      };
+
     case 'member_save':
       return {
         member: saveMember_(request.payload, requireSession_(request.sessionToken))
+      };
+
+    case 'member_delete':
+      deleteMember_(request.payload, requireSession_(request.sessionToken));
+      return {
+        deleted: true
       };
 
     case 'reports_associados':
       requireSession_(request.sessionToken);
       return {
         report: reportAssociados_(request.payload)
+      };
+
+    case 'backup_full':
+      return {
+        backup: backupFull_(requireSession_(request.sessionToken))
       };
 
     default:
@@ -616,32 +643,53 @@ function safeUserForList_(user) {
   };
 }
 
+function appBootstrap_() {
+  var members = readMembers_();
+
+  return {
+    dashboard: dashboardFromMembers_(members),
+    options: getOptionsFromMembers_(members),
+    users: listUsers_(),
+    publicItems: listPublicItems_(true)
+  };
+}
+
 function dashboard_() {
-  var members = listMembers_({
-    sortBy: 'updatedAt',
-    sortDir: 'desc'
+  return dashboardFromMembers_(readMembers_());
+}
+
+function dashboardFromMembers_(members) {
+  var cleanMembers = members.map(function (member) {
+    var copy = extend_({}, member);
+    delete copy._rowNumber;
+    return copy;
   });
 
-  var activeMembers = members.filter(function (member) {
+  sortMembers_(cleanMembers, 'updatedAt', 'desc');
+
+  var activeMembers = cleanMembers.filter(function (member) {
     return member.status === 'ATIVO';
   });
 
   return {
     unionName: getUnionName_(),
     stats: {
-      total: members.length,
+      total: cleanMembers.length,
       ativos: activeMembers.length,
-      inativos: members.length - activeMembers.length,
-      locaisTrabalho: distinct_(members, 'localTrabalho').length,
-      setores: distinct_(members, 'setor').length,
-      funcoes: distinct_(members, 'funcao').length
+      inativos: cleanMembers.length - activeMembers.length,
+      locaisTrabalho: distinct_(cleanMembers, 'localTrabalho').length,
+      setores: distinct_(cleanMembers, 'setor').length,
+      funcoes: distinct_(cleanMembers, 'funcao').length
     },
-    recentMembers: members.slice(0, 10)
+    recentMembers: cleanMembers.slice(0, 10)
   };
 }
 
 function getOptions_() {
-  var members = readMembers_();
+  return getOptionsFromMembers_(readMembers_());
+}
+
+function getOptionsFromMembers_(members) {
   var optionGroups = groupedActiveOptions_();
 
   return {
@@ -968,6 +1016,36 @@ function sortPublicItems_(items) {
 }
 
 
+
+function backupFull_(user) {
+  var members = readMembers_().map(function (member) {
+    var copy = extend_({}, member);
+    delete copy._rowNumber;
+    return copy;
+  });
+
+  var auditItems = sheetToObjects_(getSheet_(ASSOC_SHEETS.AUDIT), AUDIT_HEADERS).map(function (item) {
+    delete item._rowNumber;
+    return item;
+  });
+
+  return {
+    generatedAt: nowIso_(),
+    generatedBy: safeUser_(user),
+    unionName: getUnionName_(),
+    spreadsheetName: getSpreadsheet_().getName(),
+    dashboard: dashboardFromMembers_(members),
+    members: members,
+    options: readOptions_().map(function (item) {
+      delete item._rowNumber;
+      return item;
+    }),
+    publicItems: listPublicItems_(true),
+    users: listUsers_(),
+    audit: auditItems
+  };
+}
+
 function listMembers_(filters) {
   return filterMembers_(readMembers_(), filters || {});
 }
@@ -990,6 +1068,277 @@ function getMemberById_(id) {
   delete member._rowNumber;
   return member;
 }
+
+
+function findMemberDuplicates_(payload) {
+  var member = normalizeMember_(payload || {});
+  var matches = {};
+  var memberCpf = String(member.cpf || '');
+  var memberMatricula = normalizeText_(member.matricula || '');
+  var memberNome = normalizeText_(member.nome || '');
+  var memberFuncao = normalizeText_(member.funcao || '');
+
+  readMembers_().forEach(function (item) {
+    if (item.id === member.id) {
+      return;
+    }
+
+    var motivos = [];
+
+    if (memberCpf && String(item.cpf || '') === memberCpf) {
+      motivos.push('CPF igual');
+    }
+
+    if (memberMatricula && normalizeText_(item.matricula || '') === memberMatricula) {
+      motivos.push('Matrícula igual');
+    }
+
+    if (memberNome && memberFuncao &&
+        normalizeText_(item.nome || '') === memberNome &&
+        normalizeText_(item.funcao || '') === memberFuncao) {
+      motivos.push('Nome e função iguais');
+    }
+
+    if (!motivos.length) {
+      return;
+    }
+
+    if (!matches[item.id]) {
+      matches[item.id] = {
+        id: item.id,
+        nome: item.nome,
+        cpf: item.cpf,
+        matricula: item.matricula,
+        funcao: item.funcao,
+        status: item.status || 'ATIVO',
+        motivos: []
+      };
+    }
+
+    motivos.forEach(function (motivo) {
+      if (matches[item.id].motivos.indexOf(motivo) === -1) {
+        matches[item.id].motivos.push(motivo);
+      }
+    });
+  });
+
+  return Object.keys(matches).map(function (id) {
+    return matches[id];
+  });
+}
+
+
+
+function importMemberAdmissionDates_(payload, user) {
+  var rows = payload && payload.rows ? payload.rows : [];
+
+  if (!rows.length) {
+    throw new Error('Nenhuma linha informada para importação.');
+  }
+
+  var lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+
+  try {
+    var sheet = getSheet_(ASSOC_SHEETS.MEMBERS);
+    var headers = getHeaders_(sheet);
+    var dataColumn = headers.indexOf('dataAdmissao') + 1;
+    var updatedColumn = headers.indexOf('updatedAt') + 1;
+
+    if (!dataColumn) {
+      throw new Error('A coluna dataAdmissao não foi encontrada. Execute setupDatabase().');
+    }
+
+    var members = readMembers_();
+    var indexes = buildAdmissionImportIndexes_(members);
+    var result = {
+      total: rows.length,
+      updated: 0,
+      skipped: 0,
+      notFound: [],
+      ambiguous: [],
+      invalidDates: []
+    };
+    var now = nowIso_();
+
+    rows.forEach(function (row, index) {
+      var lineNumber = index + 1;
+      var date = parseImportedDate_(row.dataAdmissao);
+      var matchResult;
+
+      if (!date) {
+        result.skipped += 1;
+        result.invalidDates.push(importLineLabel_(row, lineNumber));
+        return;
+      }
+
+      matchResult = findAdmissionImportMember_(row, indexes);
+
+      if (matchResult.status === 'not_found') {
+        result.skipped += 1;
+        result.notFound.push(importLineLabel_(row, lineNumber));
+        return;
+      }
+
+      if (matchResult.status === 'ambiguous') {
+        result.skipped += 1;
+        result.ambiguous.push(importLineLabel_(row, lineNumber));
+        return;
+      }
+
+      sheet.getRange(matchResult.member._rowNumber, dataColumn).setValue(date);
+
+      if (updatedColumn) {
+        sheet.getRange(matchResult.member._rowNumber, updatedColumn).setValue(now);
+      }
+
+      result.updated += 1;
+    });
+
+    audit_(
+      'IMPORTAR_DATA_ADMISSAO',
+      'Associados',
+      '',
+      user.username,
+      'Linhas: ' + result.total + ' | Atualizadas: ' + result.updated + ' | Não atualizadas: ' + result.skipped
+    );
+
+    return result;
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function buildAdmissionImportIndexes_(members) {
+  var indexes = {
+    cpf: {},
+    matricula: {},
+    nome: {}
+  };
+
+  function add(map, key, member) {
+    if (!key) {
+      return;
+    }
+
+    if (!map[key]) {
+      map[key] = [];
+    }
+
+    map[key].push(member);
+  }
+
+  members.forEach(function (member) {
+    add(indexes.cpf, onlyDigits_(member.cpf), member);
+    add(indexes.matricula, normalizeText_(member.matricula), member);
+    add(indexes.nome, normalizeText_(member.nome), member);
+  });
+
+  return indexes;
+}
+
+function findAdmissionImportMember_(row, indexes) {
+  var cpf = onlyDigits_(row.cpf);
+  var matricula = normalizeText_(row.matricula);
+  var nome = normalizeText_(row.nome);
+  var candidates = [];
+
+  if (cpf) {
+    candidates = indexes.cpf[cpf] || [];
+  } else if (matricula) {
+    candidates = indexes.matricula[matricula] || [];
+  } else if (nome) {
+    candidates = indexes.nome[nome] || [];
+  }
+
+  if (!candidates.length) {
+    return { status: 'not_found' };
+  }
+
+  if (candidates.length > 1) {
+    return { status: 'ambiguous' };
+  }
+
+  return {
+    status: 'found',
+    member: candidates[0]
+  };
+}
+
+function parseImportedDate_(value) {
+  var text = clean_(value);
+
+  if (!text) {
+    return '';
+  }
+
+  var iso = text.match(/^(\d{4})-(\d{2})-(\d{2})/);
+
+  if (iso) {
+    return iso[1] + '-' + iso[2] + '-' + iso[3];
+  }
+
+  var br = text.match(/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{2,4})$/);
+
+  if (br) {
+    var day = Number(br[1]);
+    var month = Number(br[2]);
+    var year = Number(br[3]);
+
+    if (year < 100) {
+      year += year >= 50 ? 1900 : 2000;
+    }
+
+    if (isValidDateParts_(year, month, day)) {
+      return padDatePart_(year, 4) + '-' + padDatePart_(month, 2) + '-' + padDatePart_(day, 2);
+    }
+
+    return '';
+  }
+
+  var serial = Number(text.replace(',', '.'));
+
+  if (isFinite(serial) && serial > 20000 && serial < 80000) {
+    var date = new Date(Math.round((serial - 25569) * 86400000));
+
+    if (!isNaN(date.getTime())) {
+      return date.getUTCFullYear() + '-' +
+        padDatePart_(date.getUTCMonth() + 1, 2) + '-' +
+        padDatePart_(date.getUTCDate(), 2);
+    }
+  }
+
+  return '';
+}
+
+function isValidDateParts_(year, month, day) {
+  var date = new Date(year, month - 1, day);
+
+  return date.getFullYear() === year &&
+    date.getMonth() === month - 1 &&
+    date.getDate() === day;
+}
+
+function padDatePart_(value, size) {
+  var text = String(value);
+
+  while (text.length < size) {
+    text = '0' + text;
+  }
+
+  return text;
+}
+
+function importLineLabel_(row, lineNumber) {
+  return 'Linha ' + lineNumber + ': ' + (
+    clean_(row.nome) ||
+    clean_(row.cpf) ||
+    clean_(row.matricula) ||
+    clean_(row.dataAdmissao) ||
+    'sem identificação'
+  );
+}
+
 
 function saveMember_(payload, user) {
   var lock = LockService.getScriptLock();
@@ -1033,6 +1382,32 @@ function saveMember_(payload, user) {
   }
 }
 
+function deleteMember_(payload, user) {
+  var lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+
+  try {
+    var memberId = clean_(payload && payload.id);
+    var sheet = getSheet_(ASSOC_SHEETS.MEMBERS);
+    var existing = readMembers_().find(function (item) {
+      return item.id === memberId;
+    });
+
+    if (!memberId) {
+      throw new Error('Associado não informado para exclusão.');
+    }
+
+    if (!existing) {
+      throw new Error('Associado não encontrado para exclusão.');
+    }
+
+    sheet.deleteRow(existing._rowNumber);
+    audit_('EXCLUIR_ASSOCIADO', 'Associados', existing.id, user.username, existing.nome);
+  } finally {
+    lock.releaseLock();
+  }
+}
+
 function normalizeMember_(payload) {
   return {
     id: clean_(payload.id),
@@ -1040,6 +1415,7 @@ function normalizeMember_(payload) {
     cpf: onlyDigits_(payload.cpf),
     rg: clean_(payload.rg),
     dataNascimento: cleanDate_(payload.dataNascimento),
+    dataAdmissao: cleanDate_(payload.dataAdmissao),
     telefone: onlyDigits_(payload.telefone),
     email: clean_(payload.email).toLowerCase(),
     endereco: clean_(payload.endereco),
@@ -1084,15 +1460,6 @@ function validateMember_(member, members) {
     throw new Error('E-mail inválido.');
   }
 
-  if (member.cpf) {
-    var duplicate = members.find(function (item) {
-      return item.cpf === member.cpf && item.id !== member.id;
-    });
-
-    if (duplicate) {
-      throw new Error('Já existe associado cadastrado com este CPF.');
-    }
-  }
 }
 
 function reportAssociados_(filters) {
@@ -1122,6 +1489,8 @@ function reportAssociados_(filters) {
 
 function filterMembers_(members, filters) {
   var search = normalizeText_(filters.search || '');
+  var nome = normalizeText_(filters.nome || '');
+  var cpf = String(filters.cpf || '').replace(/\D/g, '');
   var localTrabalho = normalizeText_(filters.localTrabalho || '');
   var setor = normalizeText_(filters.setor || '');
   var funcao = normalizeText_(filters.funcao || '');
@@ -1141,12 +1510,21 @@ function filterMembers_(members, filters) {
         member.setor,
         member.funcao,
         member.matricula,
+        member.dataAdmissao,
         member.cidade
       ].join(' '));
 
       if (searchable.indexOf(search) === -1) {
         return false;
       }
+    }
+
+    if (nome && normalizeText_(member.nome).indexOf(nome) === -1) {
+      return false;
+    }
+
+    if (cpf && String(member.cpf || '').replace(/\D/g, '').indexOf(cpf) === -1) {
+      return false;
     }
 
     if (localTrabalho && normalizeText_(member.localTrabalho) !== localTrabalho) {
@@ -1165,11 +1543,11 @@ function filterMembers_(members, filters) {
       return false;
     }
 
-    if (dataInicial && (!member.dataAssociacao || member.dataAssociacao < dataInicial)) {
+    if (dataInicial && (!member.dataAdmissao || member.dataAdmissao < dataInicial)) {
       return false;
     }
 
-    if (dataFinal && (!member.dataAssociacao || member.dataAssociacao > dataFinal)) {
+    if (dataFinal && (!member.dataAdmissao || member.dataAdmissao > dataFinal)) {
       return false;
     }
 

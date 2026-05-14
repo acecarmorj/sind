@@ -8,30 +8,40 @@
   <link rel="stylesheet" href="./assets/styles.css" />
 </head>
 <body>
-  <div id="loginScreen" class="screen-screen">
-    <div class="card login-card">
-      <img class="login-building-thumb" src="./assets/sede-sinsermap.jpg" alt="Sede estilizada do SINSERMAP" />
-      <div class="brand-badge">SINSERMAP • cadastro de associados</div>
-      <h1>Cadastro de Associados</h1>
-      <p class="muted">Acesso interno para cadastrar, consultar e emitir relatórios de associados.</p>
-
-      <form id="loginForm" class="grid">
-        <label>
-          Usuário
-          <input id="loginUsername" value="admin" autocomplete="username" />
-        </label>
-
-        <label>
-          Senha
-          <input id="loginPassword" type="password" autocomplete="current-password" value="123456" />
-        </label>
-
-        <div class="actions">
-          <button class="btn btn-primary" type="submit">Entrar</button>
-          <a class="btn btn-secondary" href="./painel.html">Abrir painel público</a>
+  <div id="loginScreen" class="screen-screen login-screen">
+    <div class="login-shell">
+      <section class="login-visual-panel" aria-label="SINSERMAP">
+        <img class="login-hero-image" src="./assets/sede-sinsermap.jpg" alt="Sede estilizada do SINSERMAP" />
+        <div class="login-visual-copy">
+          <span class="login-kicker">Sindicato dos Servidores Públicos Municipais</span>
+          <h1>SINSERMAP</h1>
+          <p>Além Paraíba - MG</p>
         </div>
-        <p id="loginMessage" class="message"></p>
-      </form>
+      </section>
+
+      <section class="card login-card login-form-card">
+        <div class="brand-badge">Área interna</div>
+        <h1>Cadastro de Associados</h1>
+        <p class="muted">Acesse para cadastrar, consultar, emitir relatórios e manter as configurações do sistema.</p>
+
+        <form id="loginForm" class="grid">
+          <label>
+            Usuário
+            <input id="loginUsername" value="admin" autocomplete="username" />
+          </label>
+
+          <label>
+            Senha
+            <input id="loginPassword" type="password" autocomplete="current-password" value="123456" />
+          </label>
+
+          <div class="actions login-actions">
+            <button class="btn btn-primary" type="submit">Entrar</button>
+            <a class="btn btn-secondary" href="./painel.html">Painel público</a>
+          </div>
+          <p id="loginMessage" class="message"></p>
+        </form>
+      </section>
     </div>
   </div>
 
@@ -40,7 +50,10 @@
       <div class="brand-lockup">
         <img class="topbar-building-thumb" src="./assets/sede-sinsermap.jpg" alt="Sede estilizada do SINSERMAP" />
         <div>
-          <h1>SINSERMAP | Cadastro de Associados</h1>
+          <h1 class="app-heading">
+            <span class="app-heading-main">SINSERMAP</span>
+            <span class="app-heading-sub">Cadastro de Associados</span>
+          </h1>
           <p id="unionName" class="muted">Carregando...</p>
         </div>
       </div>
@@ -62,65 +75,60 @@
         <div class="overview-copy">
           <span class="eyebrow">Sistema interno</span>
           <h2>Cadastro, consulta e relatórios de associados</h2>
-          <p id="managementPhrase" class="muted">Controle os dados dos associados por local de trabalho, setor e função.</p>
         </div>
       </section>
 
       <nav class="tabs desktop-tabs" aria-label="Navegação principal">
         <button class="tab-btn active" data-tab="inicio" type="button">Início</button>
-        <button class="tab-btn" data-tab="cadastro" type="button">Cadastrar Associado</button>
-        <button class="tab-btn" data-tab="consulta" type="button">Consultar</button>
-        <button class="tab-btn" data-tab="listas" type="button">Configuração</button>
-        <button class="tab-btn" data-tab="relatorios" type="button">Relatórios</button>
+        <button class="tab-btn" data-tab="relatorios" type="button">Consulta</button>
+        <button class="tab-btn" data-tab="cadastro" type="button">Cadastrar</button>
+        <button class="tab-btn" data-tab="listas" type="button">Configurações</button>
       </nav>
 
       <section id="tab-inicio" class="tab-panel active">
-        <div class="layout-two">
-          <section class="card">
-            <div class="section-head">
-              <div>
-                <h2>Últimos associados cadastrados</h2>
-                <p class="muted">Cadastros criados ou atualizados recentemente.</p>
-              </div>
-              <button class="btn btn-primary" type="button" data-open-tab="cadastro">Novo associado</button>
-            </div>
+        <section class="stats-privacy-card">
+          <div class="stats-grid assoc-summary-grid">
+            <article class="stat-card">
+              <span class="stat-label">Associados no relatório</span>
+              <strong id="statTotal" class="stat-value">0</strong>
+            </article>
 
-            <div class="table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Nome</th>
-                    <th>Local de trabalho</th>
-                    <th>Setor</th>
-                    <th>Função</th>
-                    <th>Status</th>
-                  </tr>
-                </thead>
-                <tbody id="recentMembersBody">
-                  <tr><td colspan="5">Carregando...</td></tr>
-                </tbody>
-              </table>
-            </div>
+            <article class="stat-card">
+              <span class="stat-label">Ativos</span>
+              <strong id="statAtivos" class="stat-value">0</strong>
+            </article>
+
+            <article class="stat-card">
+              <span class="stat-label">Inativos</span>
+              <strong id="statInativos" class="stat-value">0</strong>
+            </article>
+
+            <article class="stat-card">
+              <span class="stat-label">Gerado em</span>
+              <strong id="statGeneratedAt" class="stat-value">-</strong>
+            </article>
+          </div>
+        </section>
+
+        <div class="home-focus-grid">
+          <section class="card home-message-card">
+            <span class="home-card-label">Mensagem do Sindicato</span>
+            <h2 id="dailyHomeTitle">Participação fortalece a categoria</h2>
+            <p id="dailyHomeMessage" class="home-message-text">Juntos, os servidores têm mais força, voz e representação.</p>
+            <p class="home-message-support">Uma categoria informada e presente fortalece o sindicato todos os dias.</p>
           </section>
 
-          <section class="card">
-            <div class="section-head">
+          <section class="card home-agenda-card">
+            <div class="section-head home-agenda-head">
               <div>
-                <h2>Consulta rápida</h2>
-                <p class="muted">Pesquise pelo nome, CPF, local, setor ou função.</p>
+                <span class="home-card-label">Agenda rápida</span>
+                <h2>Próximos compromissos</h2>
+                <p class="muted">Compromissos publicados na configuração do painel.</p>
               </div>
             </div>
 
-            <form id="quickSearchForm" class="grid">
-              <label>
-                Buscar
-                <input id="quickSearchText" placeholder="Ex.: Maria, escola, motorista, professor..." />
-              </label>
-              <button class="btn btn-secondary" type="submit">Consultar associados</button>
-            </form>
-
-            <div id="quickResult" class="member-detail-card mt-16">
-              <p class="muted">Use a consulta rápida para localizar cadastros sem abrir outros módulos.</p>
+            <div id="homeAgendaList" class="home-agenda-list">
+              <p class="muted">Carregando agenda...</p>
             </div>
           </section>
         </div>
@@ -138,6 +146,14 @@
 
           <form id="memberForm" class="grid">
             <input id="memberId" type="hidden" />
+            <input id="memberDataAssociacao" type="hidden" />
+
+            <div id="memberEditNotice" class="edit-notice hidden">
+              <strong>Editando associado:</strong>
+              <span id="memberEditName">-</span>
+            </div>
+
+            <div id="memberDuplicateNotice" class="duplicate-notice hidden"></div>
 
             <div class="grid cols-3">
               <label>
@@ -173,8 +189,8 @@
               </label>
 
               <label>
-                Data de associação
-                <input id="memberDataAssociacao" type="date" />
+                Data de admissão
+                <input id="memberDataAdmissao" type="date" />
               </label>
             </div>
 
@@ -243,7 +259,7 @@
             </div>
 
             <div class="actions">
-              <button class="btn btn-primary" type="submit">Salvar associado</button>
+              <button id="memberSubmitBtn" class="btn btn-primary" type="submit">Salvar associado</button>
               <button id="clearMemberBtn" class="btn btn-secondary" type="button">Limpar</button>
             </div>
 
@@ -252,127 +268,12 @@
         </section>
       </section>
 
-      <section id="tab-consulta" class="tab-panel">
-        <section class="card assoc-toolbar-card">
-          <div class="section-head">
-            <div>
-              <h2>Consultar associados</h2>
-              <p class="muted">Filtre por nome, CPF, onde trabalha, setor, função ou status.</p>
-            </div>
-            <button id="searchMembersBtn" class="btn btn-primary" type="button">Buscar</button>
-          </div>
-
-          <div class="grid cols-4">
-            <label>
-              Busca
-              <input id="filterSearch" placeholder="Nome, CPF, setor, função..." />
-            </label>
-
-            <label>
-              Onde trabalha
-              <select id="filterLocalTrabalho">
-                <option value="">Todos</option>
-              </select>
-            </label>
-
-            <label>
-              Setor
-              <select id="filterSetor">
-                <option value="">Todos</option>
-              </select>
-            </label>
-
-            <label>
-              Função
-              <select id="filterFuncao">
-                <option value="">Todas</option>
-              </select>
-            </label>
-          </div>
-
-          <div class="grid cols-4 mt-16">
-            <label>
-              Status
-              <select id="filterStatus">
-                <option value="">Todos</option>
-                <option value="ATIVO">Ativo</option>
-                <option value="INATIVO">Inativo</option>
-              </select>
-            </label>
-
-            <label>
-              Ordenar por
-              <select id="filterSortBy">
-                <option value="nome">Nome</option>
-                <option value="localTrabalho">Onde trabalha</option>
-                <option value="setor">Setor</option>
-                <option value="funcao">Função</option>
-                <option value="updatedAt">Atualização</option>
-              </select>
-            </label>
-
-            <label>
-              Direção
-              <select id="filterSortDir">
-                <option value="asc">Crescente</option>
-                <option value="desc">Decrescente</option>
-              </select>
-            </label>
-
-            <label>
-              Limite
-              <select id="filterLimit">
-                <option value="100">100 registros</option>
-                <option value="250">250 registros</option>
-                <option value="500">500 registros</option>
-                <option value="">Todos</option>
-              </select>
-            </label>
-          </div>
-
-          <p id="consultMessage" class="message mt-16"></p>
-        </section>
-
-        <section class="card">
-          <div class="section-head">
-            <div>
-              <h2>Resultado da consulta</h2>
-              <p id="consultCount" class="muted">Nenhum resultado carregado.</p>
-            </div>
-            <div class="actions">
-              <button id="exportConsultCsvBtn" class="btn btn-secondary" type="button">Exportar CSV</button>
-            </div>
-          </div>
-
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Nome</th>
-                  <th>CPF</th>
-                  <th>Telefone</th>
-                  <th>Onde trabalha</th>
-                  <th>Setor</th>
-                  <th>Função</th>
-                  <th>Status</th>
-                  <th>Ações</th>
-                </tr>
-              </thead>
-              <tbody id="membersTableBody">
-                <tr><td colspan="8">Use os filtros para consultar.</td></tr>
-              </tbody>
-            </table>
-          </div>
-        </section>
-      </section>
-
-
       <section id="tab-listas" class="tab-panel">
         <section class="card">
           <div class="section-head">
             <div>
-              <h2>Configuração</h2>
-              <p class="muted">Cadastre usuários do sistema e as opções que aparecem em Onde trabalha, Setor e Função/cargo.</p>
+              <h2>Configurações</h2>
+              <p class="muted">Cadastre usuários do sistema e informações do painel público.</p>
             </div>
           </div>
 
@@ -523,112 +424,6 @@
             </div>
           </section>
 
-          <div class="option-manager-grid">
-            <section class="option-manager-card">
-              <div class="section-head compact-head">
-                <div>
-                  <h3>Onde trabalha</h3>
-                  <p class="muted">Ex.: Prefeitura, Escola, Secretaria.</p>
-                </div>
-              </div>
-
-              <form id="optionFormLocalTrabalho" class="grid option-form" data-option-type="localTrabalho">
-                <input id="optionLocalTrabalhoId" type="hidden" />
-                <label>
-                  Nome da opção
-                  <input id="optionLocalTrabalhoNome" placeholder="Digite o local de trabalho" />
-                </label>
-                <div class="actions">
-                  <button class="btn btn-primary" type="submit">Salvar</button>
-                  <button class="btn btn-secondary" type="button" data-clear-option="localTrabalho">Limpar</button>
-                </div>
-              </form>
-
-              <div class="table-wrap mt-16">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Opção</th>
-                      <th>Ações</th>
-                    </tr>
-                  </thead>
-                  <tbody id="optionsLocalTrabalhoBody">
-                    <tr><td colspan="2">Carregando...</td></tr>
-                  </tbody>
-                </table>
-              </div>
-            </section>
-
-            <section class="option-manager-card">
-              <div class="section-head compact-head">
-                <div>
-                  <h3>Setor</h3>
-                  <p class="muted">Ex.: Educação, Saúde, Obras.</p>
-                </div>
-              </div>
-
-              <form id="optionFormSetor" class="grid option-form" data-option-type="setor">
-                <input id="optionSetorId" type="hidden" />
-                <label>
-                  Nome da opção
-                  <input id="optionSetorNome" placeholder="Digite o setor" />
-                </label>
-                <div class="actions">
-                  <button class="btn btn-primary" type="submit">Salvar</button>
-                  <button class="btn btn-secondary" type="button" data-clear-option="setor">Limpar</button>
-                </div>
-              </form>
-
-              <div class="table-wrap mt-16">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Opção</th>
-                      <th>Ações</th>
-                    </tr>
-                  </thead>
-                  <tbody id="optionsSetorBody">
-                    <tr><td colspan="2">Carregando...</td></tr>
-                  </tbody>
-                </table>
-              </div>
-            </section>
-
-            <section class="option-manager-card">
-              <div class="section-head compact-head">
-                <div>
-                  <h3>Função / cargo</h3>
-                  <p class="muted">Ex.: Motorista, Professor, Auxiliar.</p>
-                </div>
-              </div>
-
-              <form id="optionFormFuncao" class="grid option-form" data-option-type="funcao">
-                <input id="optionFuncaoId" type="hidden" />
-                <label>
-                  Nome da opção
-                  <input id="optionFuncaoNome" placeholder="Digite a função ou cargo" />
-                </label>
-                <div class="actions">
-                  <button class="btn btn-primary" type="submit">Salvar</button>
-                  <button class="btn btn-secondary" type="button" data-clear-option="funcao">Limpar</button>
-                </div>
-              </form>
-
-              <div class="table-wrap mt-16">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Opção</th>
-                      <th>Ações</th>
-                    </tr>
-                  </thead>
-                  <tbody id="optionsFuncaoBody">
-                    <tr><td colspan="2">Carregando...</td></tr>
-                  </tbody>
-                </table>
-              </div>
-            </section>
-          </div>
         </section>
       </section>
 
@@ -638,134 +433,94 @@
         <section class="card assoc-toolbar-card no-print">
           <div class="section-head">
             <div>
-              <h2>Relatórios de associados</h2>
-              <p class="muted">Gere relatórios por onde trabalha, setor, função e status.</p>
+              <h2>Consulta de associados</h2>
+              <p class="muted">Consulte por função e gere relatório quando precisar.</p>
             </div>
-            <div class="actions">
-              <button id="loadReportBtn" class="btn btn-primary" type="button">Gerar relatório</button>
-              <button id="printReportBtn" class="btn btn-secondary" type="button">Imprimir</button>
-              <button id="exportReportCsvBtn" class="btn btn-secondary" type="button">Exportar CSV</button>
+            <div class="actions report-export-actions">
+              <button id="printReportBtn" class="btn btn-secondary" type="button">Gerar PDF</button>
+              <button id="exportReportExcelBtn" class="btn btn-secondary" type="button">Exportar Excel</button>
+              <button id="backupFullBtn" class="btn btn-secondary" type="button">Backup completo</button>
             </div>
           </div>
 
-          <div class="grid cols-4">
-            <label>
-              Busca
-              <input id="reportSearch" placeholder="Nome, local, setor ou função" />
-            </label>
+          <div class="report-filter-panel">
+            <div class="grid cols-4 report-filter-grid">
+              <label>
+                Nome
+                <input id="reportNome" placeholder="Digite parte do nome" />
+              </label>
 
-            <label>
-              Onde trabalha
-              <select id="reportLocalTrabalho">
-                <option value="">Todos</option>
-              </select>
-            </label>
+              <label>
+                CPF
+                <input id="reportCpf" inputmode="numeric" placeholder="000.000.000-00" />
+              </label>
 
-            <label>
-              Setor
-              <select id="reportSetor">
-                <option value="">Todos</option>
-              </select>
-            </label>
+              <label>
+                Onde trabalha
+                <select id="reportLocalTrabalho">
+                  <option value="">Todos</option>
+                </select>
+              </label>
 
-            <label>
-              Função
-              <select id="reportFuncao">
-                <option value="">Todas</option>
-              </select>
-            </label>
-          </div>
+              <label>
+                Setor
+                <select id="reportSetor">
+                  <option value="">Todos</option>
+                </select>
+              </label>
+            </div>
 
-          <div class="grid cols-4 mt-16">
-            <label>
-              Status
-              <select id="reportStatus">
-                <option value="">Todos</option>
-                <option value="ATIVO">Ativo</option>
-                <option value="INATIVO">Inativo</option>
-              </select>
-            </label>
+            <div class="grid cols-4 report-filter-grid mt-16">
+              <label>
+                Função
+                <select id="reportFuncao">
+                  <option value="">Todas</option>
+                </select>
+              </label>
 
-            <label>
-              Data inicial de associação
-              <input id="reportDataInicial" type="date" />
-            </label>
+              <label>
+                Status
+                <select id="reportStatus">
+                  <option value="">Todos</option>
+                  <option value="ATIVO">Ativo</option>
+                  <option value="INATIVO">Inativo</option>
+                </select>
+              </label>
 
-            <label>
-              Data final de associação
-              <input id="reportDataFinal" type="date" />
-            </label>
+              <label>
+                Data inicial de admissão
+                <input id="reportDataInicial" type="date" />
+              </label>
 
-            <label>
-              Ordenar por
-              <select id="reportSortBy">
-                <option value="nome">Nome</option>
-                <option value="localTrabalho">Onde trabalha</option>
-                <option value="setor">Setor</option>
-                <option value="funcao">Função</option>
-              </select>
-            </label>
+              <label>
+                Data final de admissão
+                <input id="reportDataFinal" type="date" />
+              </label>
+            </div>
+
+            <div class="report-filter-footer">
+              <label class="report-sort-label">
+                Ordenar por
+                <select id="reportSortBy">
+                  <option value="nome">Nome</option>
+                  <option value="localTrabalho">Onde trabalha</option>
+                  <option value="setor">Setor</option>
+                  <option value="funcao">Função</option>
+                </select>
+              </label>
+
+              <div class="actions report-filter-actions">
+                <button id="loadReportBtn" class="btn btn-primary" type="button">Buscar</button>
+                <button id="clearReportFiltersBtn" class="btn btn-secondary" type="button">Limpar filtros</button>
+              </div>
+            </div>
           </div>
 
           <p id="reportMessage" class="message mt-16"></p>
         </section>
 
         <section class="report-layout">
-          <section class="stats-privacy-card">
-            <div class="stats-grid assoc-summary-grid">
-              <article class="stat-card">
-                <span class="stat-label">Associados no relatório</span>
-                <strong id="reportTotal" class="stat-value">0</strong>
-              </article>
-
-              <article class="stat-card">
-                <span class="stat-label">Ativos</span>
-                <strong id="reportAtivos" class="stat-value">0</strong>
-              </article>
-
-              <article class="stat-card">
-                <span class="stat-label">Inativos</span>
-                <strong id="reportInativos" class="stat-value">0</strong>
-              </article>
-
-              <article class="stat-card">
-                <span class="stat-label">Gerado em</span>
-                <strong id="reportGeneratedAt" class="stat-value">-</strong>
-              </article>
-            </div>
-          </section>
-
-          <div class="report-group-grid">
-            <section class="card report-card">
-              <div class="section-head">
-                <div>
-                  <h2>Por onde trabalha</h2>
-                  <p class="muted">Quantidade por local.</p>
-                </div>
-              </div>
-              <div class="table-wrap">
-                <table>
-                  <thead><tr><th>Local</th><th>Total</th></tr></thead>
-                  <tbody id="reportByLocalBody"><tr><td colspan="2">Gere o relatório.</td></tr></tbody>
-                </table>
-              </div>
-            </section>
-
-            <section class="card report-card">
-              <div class="section-head">
-                <div>
-                  <h2>Por setor</h2>
-                  <p class="muted">Quantidade por setor.</p>
-                </div>
-              </div>
-              <div class="table-wrap">
-                <table>
-                  <thead><tr><th>Setor</th><th>Total</th></tr></thead>
-                  <tbody id="reportBySetorBody"><tr><td colspan="2">Gere o relatório.</td></tr></tbody>
-                </table>
-              </div>
-            </section>
-
+          <div class="report-group-grid report-function-layout">
             <section class="card report-card">
               <div class="section-head">
                 <div>
@@ -774,41 +529,59 @@
                 </div>
               </div>
               <div class="table-wrap">
-                <table>
+                <table class="function-summary-table">
                   <thead><tr><th>Função</th><th>Total</th></tr></thead>
                   <tbody id="reportByFuncaoBody"><tr><td colspan="2">Gere o relatório.</td></tr></tbody>
                 </table>
               </div>
             </section>
-          </div>
 
-          <section class="card">
-            <div class="section-head">
-              <div>
-                <h2>Lista do relatório</h2>
-                <p id="reportListCount" class="muted">Nenhum relatório carregado.</p>
+            <section class="card">
+              <div class="section-head">
+                <div>
+                  <h2>Lista do relatório</h2>
+                  <p id="reportListCount" class="muted">Nenhum relatório carregado.</p>
+                </div>
               </div>
-            </div>
 
-            <div class="table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Nome</th>
-                    <th>CPF</th>
-                    <th>Telefone</th>
-                    <th>Onde trabalha</th>
-                    <th>Setor</th>
-                    <th>Função</th>
-                    <th>Status</th>
-                  </tr>
-                </thead>
-                <tbody id="reportMembersBody">
-                  <tr><td colspan="7">Gere o relatório para visualizar a lista.</td></tr>
-                </tbody>
-              </table>
-            </div>
-          </section>
+              <div class="table-wrap">
+                <table class="report-members-table">
+                  <thead>
+                    <tr>
+                      <th>Nome</th>
+                      <th>Admissão</th>
+                      <th>Telefone</th>
+                      <th>Onde trabalha</th>
+                      <th>Setor</th>
+                      <th>Função</th>
+                      <th>Status</th>
+                      <th>Ações</th>
+                    </tr>
+                  </thead>
+                  <tbody id="reportMembersBody">
+                    <tr><td colspan="8">Gere o relatório para visualizar a lista.</td></tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div class="report-pagination no-print">
+                <label class="report-page-size-label">
+                  Mostrar
+                  <select id="reportPageSize">
+                    <option value="50" selected>50 por página</option>
+                    <option value="100">100 por página</option>
+                    <option value="200">200 por página</option>
+                  </select>
+                </label>
+
+                <div class="report-page-actions">
+                  <button id="reportPrevPageBtn" class="btn btn-secondary" type="button">Anterior</button>
+                  <span id="reportPageInfo" class="muted small">Página 1 de 1</span>
+                  <button id="reportNextPageBtn" class="btn btn-secondary" type="button">Próxima</button>
+                </div>
+              </div>
+            </section>
+          </div>
         </section>
       </section>
     </main>
