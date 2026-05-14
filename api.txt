@@ -15,6 +15,12 @@ var ASSOC_SECURITY = {
   SESSION_TTL_SECONDS: 21600
 };
 
+var ASSOC_CACHE = {
+  MEMBERS_KEY: 'ASSOC_MEMBERS_V2',
+  TTL_SECONDS: 300,
+  CHUNK_SIZE: 80000
+};
+
 var ASSOC_SHEETS = {
   MEMBERS: 'Associados',
   USERS: 'Usuarios',
@@ -660,9 +666,7 @@ function dashboard_() {
 
 function dashboardFromMembers_(members) {
   var cleanMembers = members.map(function (member) {
-    var copy = extend_({}, member);
-    delete copy._rowNumber;
-    return copy;
+    return publicMemberCopy_(member);
   });
 
   sortMembers_(cleanMembers, 'updatedAt', 'desc');
@@ -1019,9 +1023,7 @@ function sortPublicItems_(items) {
 
 function backupFull_(user) {
   var members = readMembers_(true).map(function (member) {
-    var copy = extend_({}, member);
-    delete copy._rowNumber;
-    return copy;
+    return publicMemberCopy_(member);
   });
 
   var auditItems = sheetToObjects_(getSheet_(ASSOC_SHEETS.AUDIT), AUDIT_HEADERS).map(function (item) {
@@ -1047,7 +1049,15 @@ function backupFull_(user) {
 }
 
 function listMembers_(filters) {
-  return filterMembers_(readMembers_(), filters || {});
+  var safeFilters = filters || {};
+  var members = filterMembers_(readMembers_(), safeFilters);
+  var limit = Number(safeFilters.limit || 0);
+
+  if (limit > 0) {
+    return members.slice(0, Math.min(limit, 200));
+  }
+
+  return members;
 }
 
 function getMemberById_(id) {
@@ -1065,8 +1075,7 @@ function getMemberById_(id) {
     throw new Error('Associado não encontrado.');
   }
 
-  delete member._rowNumber;
-  return member;
+  return publicMemberCopy_(member);
 }
 
 
@@ -1202,6 +1211,10 @@ function importMemberAdmissionDates_(payload, user) {
       user.username,
       'Linhas: ' + result.total + ' | Atualizadas: ' + result.updated + ' | Não atualizadas: ' + result.skipped
     );
+
+    if (result.updated > 0) {
+      invalidateMembersCache_();
+    }
 
     return result;
   } finally {
@@ -1365,6 +1378,7 @@ function saveMember_(payload, user) {
       member.updatedAt = now;
 
       updateRow_(sheet, existing._rowNumber, member, MEMBER_HEADERS);
+      invalidateMembersCache_();
       audit_('ATUALIZAR_ASSOCIADO', 'Associados', member.id, user.username, member.nome);
     } else {
       member.id = generateId_('ASSOC');
@@ -1372,6 +1386,7 @@ function saveMember_(payload, user) {
       member.updatedAt = now;
 
       appendObject_(sheet, member, MEMBER_HEADERS);
+      invalidateMembersCache_();
       audit_('CRIAR_ASSOCIADO', 'Associados', member.id, user.username, member.nome);
     }
 
@@ -1405,6 +1420,7 @@ function deleteMember_(payload, user) {
     existing.updatedAt = nowIso_();
 
     updateRow_(sheet, existing._rowNumber, existing, MEMBER_HEADERS);
+    invalidateMembersCache_();
     audit_('EXCLUIR_ASSOCIADO', 'Associados', existing.id, user.username, existing.nome);
   } finally {
     lock.releaseLock();
@@ -1551,16 +1567,32 @@ function filterMembers_(members, filters) {
 
   sortMembers_(result, filters.sortBy, filters.sortDir);
 
-  var limit = Number(filters.limit || 0);
-  if (limit > 0) {
-    result = result.slice(0, limit);
+  return result.map(function (member) {
+    return publicMemberCopy_(member);
+  });
+}
+
+function publicMemberCopy_(member, summaryOnly) {
+  var copy = extend_({}, member || {});
+
+  delete copy._rowNumber;
+  delete copy._index;
+
+  if (!summaryOnly) {
+    return copy;
   }
 
-  return result.map(function (member) {
-    var copy = extend_({}, member);
-    delete copy._rowNumber;
-    return copy;
-  });
+  return {
+    id: copy.id,
+    nome: copy.nome,
+    telefone: copy.telefone,
+    localTrabalho: copy.localTrabalho,
+    setor: copy.setor,
+    funcao: copy.funcao,
+    matricula: copy.matricula,
+    dataAdmissao: copy.dataAdmissao,
+    status: copy.status || 'ATIVO'
+  };
 }
 
 function sortMembers_(members, sortBy, sortDir) {
@@ -1587,12 +1619,126 @@ function sortMembers_(members, sortBy, sortDir) {
 }
 
 function readMembers_(includeDeleted) {
-  return sheetToObjects_(ASSOC_SHEETS.MEMBERS).map(function (member) {
+  return readMembersCached_().map(function (member) {
     member.status = member.status || 'ATIVO';
     return member;
   }).filter(function (member) {
     return includeDeleted || member.status !== 'EXCLUIDO';
   });
+}
+
+function readMembersCached_() {
+  var cached = getCachedJson_(ASSOC_CACHE.MEMBERS_KEY);
+
+  if (cached) {
+    return cached;
+  }
+
+  cached = sheetToObjects_(ASSOC_SHEETS.MEMBERS);
+  putCachedJson_(ASSOC_CACHE.MEMBERS_KEY, cached, ASSOC_CACHE.TTL_SECONDS);
+  return cached;
+}
+
+function cache_() {
+  try {
+    return CacheService.getScriptCache();
+  } catch (error) {
+    return null;
+  }
+}
+
+function getCachedJson_(key) {
+  var cache = cache_();
+  var metaRaw;
+  var meta;
+  var chunks = [];
+  var i;
+  var chunk;
+
+  if (!cache) {
+    return null;
+  }
+
+  metaRaw = cache.get(key + ':meta');
+  if (!metaRaw) {
+    return null;
+  }
+
+  try {
+    meta = JSON.parse(metaRaw);
+
+    for (i = 0; i < meta.chunks; i += 1) {
+      chunk = cache.get(key + ':' + i);
+      if (chunk == null) {
+        return null;
+      }
+
+      chunks.push(chunk);
+    }
+
+    return JSON.parse(chunks.join(''));
+  } catch (error) {
+    removeCachedJson_(key);
+    return null;
+  }
+}
+
+function putCachedJson_(key, value, ttlSeconds) {
+  var cache = cache_();
+  var json;
+  var chunks;
+  var i;
+
+  if (!cache) {
+    return;
+  }
+
+  removeCachedJson_(key);
+  json = JSON.stringify(value || []);
+  chunks = Math.ceil(json.length / ASSOC_CACHE.CHUNK_SIZE);
+
+  for (i = 0; i < chunks; i += 1) {
+    cache.put(
+      key + ':' + i,
+      json.slice(i * ASSOC_CACHE.CHUNK_SIZE, (i + 1) * ASSOC_CACHE.CHUNK_SIZE),
+      ttlSeconds || ASSOC_CACHE.TTL_SECONDS
+    );
+  }
+
+  cache.put(key + ':meta', JSON.stringify({ chunks: chunks }), ttlSeconds || ASSOC_CACHE.TTL_SECONDS);
+}
+
+function removeCachedJson_(key) {
+  var cache = cache_();
+  var metaRaw;
+  var meta;
+  var keys = [key + ':meta'];
+  var i;
+
+  if (!cache) {
+    return;
+  }
+
+  metaRaw = cache.get(key + ':meta');
+
+  if (metaRaw) {
+    try {
+      meta = JSON.parse(metaRaw);
+      for (i = 0; i < meta.chunks; i += 1) {
+        keys.push(key + ':' + i);
+      }
+    } catch (error) {
+      for (i = 0; i < 20; i += 1) {
+        keys.push(key + ':' + i);
+      }
+    }
+  }
+
+  cache.removeAll(keys);
+}
+
+function invalidateMembersCache_() {
+  removeCachedJson_(ASSOC_CACHE.MEMBERS_KEY);
 }
 
 function getSheet_(sheetName) {

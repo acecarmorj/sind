@@ -12,6 +12,8 @@
     reportPage: 1,
     reportPageSize: 50,
     reportActiveFuncao: '',
+    reportLoaded: false,
+    reportLoading: false,
     users: [],
     publicItems: [],
     publicGroups: {},
@@ -301,6 +303,11 @@
     document.querySelectorAll('.tab-panel').forEach(function (panel) {
       panel.classList.toggle('active', panel.id === 'tab-' + tabName);
     });
+
+    if (tabName === 'relatorios' && !state.reportLoaded && !state.reportLoading) {
+      state.reportPage = 1;
+      loadReport();
+    }
   }
 
   function activatePublicSection(sectionName) {
@@ -457,7 +464,9 @@
 
   function functionGroupRow(item) {
     var label = item.label || 'Não informado';
-    return '<tr class="report-function-row" data-report-funcao="' + escapeHtml(label) + '">' +
+    var selectedClass = normalizeText(state.reportActiveFuncao || '') === normalizeText(label) ? ' is-selected' : '';
+
+    return '<tr class="report-function-row' + selectedClass + '" data-report-funcao="' + escapeHtml(label) + '">' +
       '<td>' + escapeHtml(label) + '</td>' +
       '<td>' + escapeHtml(item.total) + '</td>' +
       '</tr>';
@@ -507,6 +516,7 @@
 
   function renderReport(report) {
     state.report = report || {};
+    state.reportLoaded = true;
     state.reportPage = 1;
     state.reportActiveFuncao = '';
 
@@ -523,32 +533,35 @@
   function renderReportMembers(members, funcao) {
     var filteredMembers = members || [];
     var pageSize = Number(value('reportPageSize') || state.reportPageSize || 50);
-
-    state.reportActiveFuncao = funcao || '';
-    state.reportPageSize = pageSize > 0 ? pageSize : 50;
+    var total;
+    var totalPages;
+    var start;
+    var pageMembers;
+    var end;
+    var rangeLabel;
 
     if (funcao) {
       filteredMembers = filteredMembers.filter(function (member) {
-        return normalizeText(member.funcao || 'Não informado') === normalizeText(funcao);
+        return normalizeText(member.funcao || 'Nao informado') === normalizeText(funcao);
       });
     }
 
-    var total = filteredMembers.length;
-    var totalPages = Math.max(1, Math.ceil(total / state.reportPageSize));
-
-    if (state.reportPage < 1) {
-      state.reportPage = 1;
-    }
+    total = filteredMembers.length;
+    totalPages = Math.max(1, Math.ceil(total / pageSize));
 
     if (state.reportPage > totalPages) {
       state.reportPage = totalPages;
     }
 
-    var startIndex = (state.reportPage - 1) * state.reportPageSize;
-    var pageMembers = filteredMembers.slice(startIndex, startIndex + state.reportPageSize);
-    var rangeLabel = total ?
-      ' Mostrando ' + (startIndex + 1) + '-' + (startIndex + pageMembers.length) + ' de ' + total + '.' :
+    start = (state.reportPage - 1) * pageSize;
+    pageMembers = filteredMembers.slice(start, start + pageSize);
+    end = start + pageMembers.length;
+    rangeLabel = total ?
+      ' Mostrando ' + (start + 1) + '-' + end + ' de ' + total + '.' :
       '';
+
+    state.reportActiveFuncao = funcao || '';
+    state.reportPageSize = pageSize > 0 ? pageSize : 50;
 
     text(
       'reportListCount',
@@ -582,6 +595,14 @@
     );
   }
 
+  function reportHasPartialData() {
+    var report = state.report || {};
+    var total = Number(report.summary && report.summary.total || 0);
+    var loaded = report.members ? report.members.length : 0;
+
+    return total > loaded;
+  }
+
   function changeReportPage(direction) {
     state.reportPage += direction;
     rerenderReportPage();
@@ -596,7 +617,6 @@
   function clearFunctionFilter() {
     state.reportPage = 1;
     state.reportActiveFuncao = '';
-
     document.querySelectorAll('[data-report-funcao]').forEach(function (row) {
       row.classList.remove('is-selected');
     });
@@ -703,6 +723,23 @@
     };
   }
 
+  function reportRequestFilters(includeAll) {
+    var filters = queryFilters('report');
+
+    filters.page = state.reportPage || 1;
+    filters.pageSize = Number(value('reportPageSize') || state.reportPageSize || 50);
+
+    if (state.reportActiveFuncao) {
+      filters.funcao = state.reportActiveFuncao;
+    }
+
+    if (includeAll) {
+      filters.includeAll = true;
+    }
+
+    return filters;
+  }
+
   function consultFilters() {
     return {
       search: value('filterSearch'),
@@ -754,19 +791,60 @@
 
     setValue('reportSortBy', 'nome');
     state.reportPage = 1;
+    state.reportActiveFuncao = '';
     loadReport();
   }
 
-  async function loadReport() {
-    clearMessages();
+  function searchReport() {
+    state.reportPage = 1;
+    state.reportActiveFuncao = value('reportFuncao');
+    loadReport();
+  }
+
+  function preloadReport() {
+    if (state.reportLoaded || state.reportLoading) {
+      return;
+    }
+
+    window.setTimeout(function () {
+      loadReport({
+        silent: true,
+        filters: {
+          sortBy: 'nome',
+          sortDir: 'asc'
+        }
+      });
+    }, 250);
+  }
+
+  async function loadReport(options) {
+    var silent = options && options.silent;
+    var filters = options && options.filters ? options.filters : queryFilters('report');
+
+    filters.includeAll = true;
+
+    if (!silent) {
+      clearMessages();
+    }
+
+    if (state.reportLoading) {
+      return;
+    }
+
+    state.reportLoading = true;
 
     try {
-      state.reportPage = 1;
-      var response = await api.getApi('reports_associados', queryFilters('report'));
+      var response = await api.getApi('reports_associados', filters);
       renderReport(response.report || {});
-      setMessage('reportMessage', 'Consulta carregada com sucesso.', 'success');
+      if (!silent) {
+        setMessage('reportMessage', 'Consulta carregada com sucesso.', 'success');
+      }
     } catch (error) {
-      setMessage('reportMessage', error.message || 'Falha ao consultar associados.', 'error');
+      if (!silent) {
+        setMessage('reportMessage', error.message || 'Falha ao consultar associados.', 'error');
+      }
+    } finally {
+      state.reportLoading = false;
     }
   }
 
@@ -1127,6 +1205,8 @@
 
       if (byId('tab-relatorios').classList.contains('active')) {
         await loadReport();
+      } else {
+        preloadReport();
       }
 
       setMessage('globalMessage', 'Sistema atualizado.', 'success');
@@ -1158,6 +1238,8 @@
       fillMemberForm(response.member);
       setMessage('memberMessage', payload.id ? 'Associado atualizado com sucesso.' : 'Associado salvo com sucesso.', 'success');
       await loadBootstrap();
+      state.reportLoaded = false;
+      preloadReport();
     } catch (error) {
       setMessage('memberMessage', error.message || 'Falha ao salvar associado.', 'error');
     }
@@ -1205,9 +1287,12 @@
     try {
       await api.postApi('member_delete', { id: id });
       await loadDashboard();
+      state.reportLoaded = false;
 
       if (byId('tab-relatorios') && byId('tab-relatorios').classList.contains('active')) {
         await loadReport();
+      } else {
+        preloadReport();
       }
 
       setMessage('reportMessage', 'Associado excluído das consultas com sucesso.', 'success');
@@ -1735,7 +1820,7 @@
   }
 
   function exportReportExcel() {
-    var members = state.report && state.report.members ? state.report.members : [];
+    var members = filteredReportMembers();
 
     if (!members.length) {
       setMessage('reportMessage', 'Busque um relatório antes de exportar.', 'error');
@@ -2166,7 +2251,7 @@
     if (byId('quickSearchForm')) {
       byId('quickSearchForm').addEventListener('submit', quickSearch);
     }
-    byId('loadReportBtn').addEventListener('click', loadReport);
+    byId('loadReportBtn').addEventListener('click', searchReport);
     if (byId('clearReportFiltersBtn')) {
       byId('clearReportFiltersBtn').addEventListener('click', clearReportFilters);
     }
@@ -2258,12 +2343,38 @@
 
       var reportFunctionRow = event.target.closest('[data-report-funcao]');
       if (reportFunctionRow) {
+        var selectedFuncao = reportFunctionRow.getAttribute('data-report-funcao');
+
         document.querySelectorAll('[data-report-funcao]').forEach(function (row) {
           row.classList.remove('is-selected');
         });
         reportFunctionRow.classList.add('is-selected');
         state.reportPage = 1;
-        renderReportMembers(state.report && state.report.members ? state.report.members : [], reportFunctionRow.getAttribute('data-report-funcao'));
+
+        if (reportHasPartialData()) {
+          setMessage('reportMessage', 'Carregando lista completa para filtrar a funÃ§Ã£o...', 'success');
+          loadReport({
+            silent: true,
+            filters: {
+              sortBy: value('reportSortBy') || 'nome',
+              sortDir: value('reportSortDir') || 'asc'
+            }
+          }).then(function () {
+            renderReportMembers(
+              state.report && state.report.members ? state.report.members : [],
+              selectedFuncao
+            );
+            setMessage('reportMessage', 'FunÃ§Ã£o filtrada com a lista completa.', 'success');
+          }).catch(function (error) {
+            setMessage('reportMessage', error.message || 'Falha ao carregar lista completa.', 'error');
+          });
+          return;
+        }
+
+        renderReportMembers(
+          state.report && state.report.members ? state.report.members : [],
+          selectedFuncao
+        );
         return;
       }
 
