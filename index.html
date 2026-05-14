@@ -155,54 +155,10 @@
 
             <div id="memberDuplicateNotice" class="duplicate-notice hidden"></div>
 
-            <div class="grid cols-3">
+            <div class="grid cols-4 member-priority-grid">
               <label>
                 Nome completo *
                 <input id="memberNome" required placeholder="Nome do associado" />
-              </label>
-
-              <label>
-                CPF
-                <input id="memberCpf" inputmode="numeric" placeholder="000.000.000-00" />
-              </label>
-
-              <label>
-                RG
-                <input id="memberRg" placeholder="Documento de identidade" />
-              </label>
-            </div>
-
-            <div class="grid cols-4">
-              <label>
-                Data de nascimento
-                <input id="memberDataNascimento" type="date" />
-              </label>
-
-              <label>
-                Telefone
-                <input id="memberTelefone" placeholder="(00) 00000-0000" />
-              </label>
-
-              <label>
-                E-mail
-                <input id="memberEmail" type="email" placeholder="email@exemplo.com" />
-              </label>
-
-              <label>
-                Data de admissão
-                <input id="memberDataAdmissao" type="date" />
-              </label>
-            </div>
-
-            <div class="grid cols-4">
-              <label>
-                Onde trabalha
-                <input id="memberLocalTrabalho" list="localTrabalhoList" placeholder="Ex.: Prefeitura, Escola..." />
-              </label>
-
-              <label>
-                Setor
-                <input id="memberSetor" list="setorList" placeholder="Ex.: Educação, Saúde..." />
               </label>
 
               <label>
@@ -213,6 +169,50 @@
               <label>
                 Matrícula
                 <input id="memberMatricula" placeholder="Matrícula funcional" />
+              </label>
+
+              <label>
+                Data de admissão
+                <input id="memberDataAdmissao" type="date" />
+              </label>
+            </div>
+
+            <div class="grid cols-4">
+              <label>
+                CPF
+                <input id="memberCpf" inputmode="numeric" placeholder="000.000.000-00" />
+              </label>
+
+              <label>
+                RG
+                <input id="memberRg" placeholder="Documento de identidade" />
+              </label>
+
+              <label>
+                Data de nascimento
+                <input id="memberDataNascimento" type="date" />
+              </label>
+
+              <label>
+                Telefone
+                <input id="memberTelefone" placeholder="(00) 00000-0000" />
+              </label>
+            </div>
+
+            <div class="grid cols-3">
+              <label>
+                E-mail
+                <input id="memberEmail" type="email" placeholder="email@exemplo.com" />
+              </label>
+
+              <label>
+                Onde trabalha
+                <input id="memberLocalTrabalho" list="localTrabalhoList" placeholder="Ex.: Prefeitura, Escola..." />
+              </label>
+
+              <label>
+                Setor
+                <input id="memberSetor" list="setorList" placeholder="Ex.: Educação, Saúde..." />
               </label>
             </div>
 
@@ -444,7 +444,7 @@
           </div>
 
           <div class="report-filter-panel">
-            <div class="grid cols-4 report-filter-grid">
+            <div class="grid cols-2 report-filter-grid report-main-search-grid">
               <label>
                 Nome
                 <input id="reportNome" placeholder="Digite parte do nome" />
@@ -454,61 +454,67 @@
                 CPF
                 <input id="reportCpf" inputmode="numeric" placeholder="000.000.000-00" />
               </label>
-
-              <label>
-                Onde trabalha
-                <select id="reportLocalTrabalho">
-                  <option value="">Todos</option>
-                </select>
-              </label>
-
-              <label>
-                Setor
-                <select id="reportSetor">
-                  <option value="">Todos</option>
-                </select>
-              </label>
             </div>
 
-            <div class="grid cols-4 report-filter-grid mt-16">
-              <label>
-                Função
-                <select id="reportFuncao">
-                  <option value="">Todas</option>
-                </select>
-              </label>
+            <details class="advanced-filter-panel">
+              <summary>Filtros avançados</summary>
 
-              <label>
-                Status
-                <select id="reportStatus">
-                  <option value="">Todos</option>
-                  <option value="ATIVO">Ativo</option>
-                  <option value="INATIVO">Inativo</option>
-                </select>
-              </label>
+              <div class="grid cols-4 report-filter-grid mt-16">
+                <label>
+                  Onde trabalha
+                  <select id="reportLocalTrabalho">
+                    <option value="">Todos</option>
+                  </select>
+                </label>
 
-              <label>
-                Data inicial de admissão
-                <input id="reportDataInicial" type="date" />
-              </label>
+                <label>
+                  Setor
+                  <select id="reportSetor">
+                    <option value="">Todos</option>
+                  </select>
+                </label>
 
-              <label>
-                Data final de admissão
-                <input id="reportDataFinal" type="date" />
-              </label>
-            </div>
+                <label>
+                  Função
+                  <select id="reportFuncao">
+                    <option value="">Todas</option>
+                  </select>
+                </label>
+
+                <label>
+                  Status
+                  <select id="reportStatus">
+                    <option value="">Todos</option>
+                    <option value="ATIVO">Ativo</option>
+                    <option value="INATIVO">Inativo</option>
+                  </select>
+                </label>
+              </div>
+
+              <div class="grid cols-4 report-filter-grid mt-16">
+                <label>
+                  Data inicial de admissão
+                  <input id="reportDataInicial" type="date" />
+                </label>
+
+                <label>
+                  Data final de admissão
+                  <input id="reportDataFinal" type="date" />
+                </label>
+
+                <label class="report-sort-label">
+                  Ordenar por
+                  <select id="reportSortBy">
+                    <option value="nome">Nome</option>
+                    <option value="localTrabalho">Onde trabalha</option>
+                    <option value="setor">Setor</option>
+                    <option value="funcao">Função</option>
+                  </select>
+                </label>
+              </div>
+            </details>
 
             <div class="report-filter-footer">
-              <label class="report-sort-label">
-                Ordenar por
-                <select id="reportSortBy">
-                  <option value="nome">Nome</option>
-                  <option value="localTrabalho">Onde trabalha</option>
-                  <option value="setor">Setor</option>
-                  <option value="funcao">Função</option>
-                </select>
-              </label>
-
               <div class="actions report-filter-actions">
                 <button id="loadReportBtn" class="btn btn-primary" type="button">Buscar</button>
                 <button id="clearReportFiltersBtn" class="btn btn-secondary" type="button">Limpar filtros</button>
@@ -527,6 +533,7 @@
                   <h2>Por função</h2>
                   <p class="muted">Ex.: motorista, professor.</p>
                 </div>
+                <button id="clearFunctionFilterBtn" class="btn btn-secondary no-print" type="button">Ver todos</button>
               </div>
               <div class="table-wrap">
                 <table class="function-summary-table">
@@ -548,18 +555,14 @@
                 <table class="report-members-table">
                   <thead>
                     <tr>
-                      <th>Nome</th>
-                      <th>Admissão</th>
-                      <th>Telefone</th>
-                      <th>Onde trabalha</th>
-                      <th>Setor</th>
-                      <th>Função</th>
+                      <th>Associado</th>
+                      <th>Dados funcionais</th>
                       <th>Status</th>
-                      <th>Ações</th>
+                      <th class="actions-col">Ações</th>
                     </tr>
                   </thead>
                   <tbody id="reportMembersBody">
-                    <tr><td colspan="8">Gere o relatório para visualizar a lista.</td></tr>
+                    <tr><td colspan="4">Gere o relatório para visualizar a lista.</td></tr>
                   </tbody>
                 </table>
               </div>

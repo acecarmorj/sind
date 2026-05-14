@@ -1018,7 +1018,7 @@ function sortPublicItems_(items) {
 
 
 function backupFull_(user) {
-  var members = readMembers_().map(function (member) {
+  var members = readMembers_(true).map(function (member) {
     var copy = extend_({}, member);
     delete copy._rowNumber;
     return copy;
@@ -1401,7 +1401,10 @@ function deleteMember_(payload, user) {
       throw new Error('Associado não encontrado para exclusão.');
     }
 
-    sheet.deleteRow(existing._rowNumber);
+    existing.status = 'EXCLUIDO';
+    existing.updatedAt = nowIso_();
+
+    updateRow_(sheet, existing._rowNumber, existing, MEMBER_HEADERS);
     audit_('EXCLUIR_ASSOCIADO', 'Associados', existing.id, user.username, existing.nome);
   } finally {
     lock.releaseLock();
@@ -1583,10 +1586,12 @@ function sortMembers_(members, sortBy, sortDir) {
   });
 }
 
-function readMembers_() {
+function readMembers_(includeDeleted) {
   return sheetToObjects_(ASSOC_SHEETS.MEMBERS).map(function (member) {
     member.status = member.status || 'ATIVO';
     return member;
+  }).filter(function (member) {
+    return includeDeleted || member.status !== 'EXCLUIDO';
   });
 }
 

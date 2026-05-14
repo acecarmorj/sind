@@ -151,6 +151,16 @@
     return value || '-';
   }
 
+  function formatCep(value) {
+    var cep = digits(value);
+
+    if (cep.length === 8) {
+      return cep.replace(/^(\d{5})(\d{3})$/, '$1-$2');
+    }
+
+    return value || '-';
+  }
+
   function formatDate(value) {
     if (!value) return '-';
     var parts = String(value).slice(0, 10).split('-');
@@ -360,8 +370,7 @@
   function badge(status) {
     var value = status || 'ATIVO';
     var safeValue = escapeHtml(value);
-    var noBreakLabel = safeValue.split('').join('&#8288;');
-    return '<span class="badge status-badge ' + safeValue + '" aria-label="' + safeValue + '">' + noBreakLabel + '</span>';
+    return '<span class="badge status-badge ' + safeValue + '" aria-label="' + safeValue + '">' + safeValue + '</span>';
   }
 
   function memberRow(member, includeActions) {
@@ -393,6 +402,52 @@
     return '<tr>' + cells.map(function (cell) {
       return '<td>' + cell + '</td>';
     }).join('') + '</tr>';
+  }
+
+  function memberActions(member) {
+    return '<div class="actions member-row-actions">' +
+      '<button class="btn btn-secondary" type="button" data-edit-member="' +
+      escapeHtml(member.id) +
+      '">Editar</button>' +
+      '<button class="btn btn-secondary" type="button" data-delete-member="' +
+      escapeHtml(member.id) +
+      '" data-member-name="' +
+      escapeHtml(member.nome || '') +
+      '">Excluir</button>' +
+      '</div>';
+  }
+
+  function reportMetaLine(label, value) {
+    return '<span><b>' + escapeHtml(label) + ':</b> ' + escapeHtml(value || '-') + '</span>';
+  }
+
+  function reportStatusText(status) {
+    var value = status || 'ATIVO';
+    var className = normalizeText(value) === 'inativo' ? 'is-inactive' : 'is-active';
+
+    return '<span class="report-status-badge ' + className + '">' + escapeHtml(value) + '</span>';
+  }
+
+  function reportMemberRow(member) {
+    return '<tr>' +
+      '<td class="report-person-cell" data-print-member="' + escapeHtml(member.id) + '" title="Clique duas vezes para gerar a ficha em PDF">' +
+      '<strong class="report-member-name">' + escapeHtml(member.nome || '-') + '</strong>' +
+      '<div class="report-member-meta">' +
+      reportMetaLine('Admissão', formatDate(member.dataAdmissao)) +
+      reportMetaLine('Telefone', formatPhone(member.telefone)) +
+      reportMetaLine('Matrícula', member.matricula || '-') +
+      '</div>' +
+      '</td>' +
+      '<td class="report-work-cell">' +
+      '<strong class="report-member-function">' + escapeHtml(member.funcao || '-') + '</strong>' +
+      '<div class="report-member-meta">' +
+      reportMetaLine('Setor', member.setor || '-') +
+      reportMetaLine('Onde trabalha', member.localTrabalho || '-') +
+      '</div>' +
+      '</td>' +
+      '<td class="report-status-cell">' + reportStatusText(member.status) + '</td>' +
+      '<td class="report-actions-cell">' + memberActions(member) + '</td>' +
+      '</tr>';
   }
 
   function groupRow(item, labelFallback) {
@@ -516,8 +571,8 @@
     }
 
     html('reportMembersBody', pageMembers.length ?
-      pageMembers.map(function (member) { return memberRow(member, true); }).join('') :
-      '<tr><td colspan="8">Nenhum associado encontrado para o relatório.</td></tr>');
+      pageMembers.map(reportMemberRow).join('') :
+      '<tr><td colspan="4">Nenhum associado encontrado para o relatório.</td></tr>');
   }
 
   function rerenderReportPage() {
@@ -536,6 +591,17 @@
     state.reportPage = 1;
     state.reportPageSize = Number(value('reportPageSize') || 50);
     rerenderReportPage();
+  }
+
+  function clearFunctionFilter() {
+    state.reportPage = 1;
+    state.reportActiveFuncao = '';
+
+    document.querySelectorAll('[data-report-funcao]').forEach(function (row) {
+      row.classList.remove('is-selected');
+    });
+
+    renderReportMembers(state.report && state.report.members ? state.report.members : [], '');
   }
 
   function resetMemberForm() {
@@ -1132,7 +1198,7 @@
       return;
     }
 
-    if (!window.confirm('Excluir o associado "' + (name || 'selecionado') + '"?')) {
+    if (!window.confirm('Excluir o associado "' + (name || 'selecionado') + '"? O cadastro ficará arquivado e sairá das consultas.')) {
       return;
     }
 
@@ -1144,7 +1210,7 @@
         await loadReport();
       }
 
-      setMessage('reportMessage', 'Associado excluído com sucesso.', 'success');
+      setMessage('reportMessage', 'Associado excluído das consultas com sucesso.', 'success');
     } catch (error) {
       setMessage('reportMessage', error.message || 'Falha ao excluir associado.', 'error');
     }
@@ -1843,6 +1909,132 @@
       '</body></html>';
   }
 
+  function findReportMemberById(id) {
+    var members = state.report && state.report.members ? state.report.members : [];
+    return members.find(function (member) {
+      return member.id === id;
+    });
+  }
+
+  function memberProfileField(label, value, className) {
+    return '<div class="profile-field ' + escapeHtml(className || '') + '"><span>' + escapeHtml(label) + '</span><strong>' + escapeHtml(value || '-') + '</strong></div>';
+  }
+
+  function buildMemberProfileHtml(member) {
+    var generatedAt = formatDateTime(new Date().toISOString());
+    var imageUrl = new URL('./assets/sede-sinsermap.jpg', window.location.href).href;
+    var address = [
+      member.endereco,
+      member.bairro,
+      member.cidade,
+      member.uf,
+      formatCep ? formatCep(member.cep) : member.cep
+    ].filter(Boolean).join(' - ');
+
+    return '<!DOCTYPE html>' +
+      '<html lang="pt-BR">' +
+      '<head>' +
+      '<meta charset="UTF-8" />' +
+      '<meta name="viewport" content="width=device-width, initial-scale=1.0" />' +
+      '<title>Ficha do Associado - ' + escapeHtml(member.nome || 'Associado') + '</title>' +
+      '<style>' +
+      '@page { size: A4 portrait; margin: 14mm; }' +
+      ':root { --green:#2f6f46; --green-dark:#214d33; --green-soft:#edf5ef; --text:#1f2d35; --muted:#5e6c74; --border:#d8e0dc; }' +
+      '* { box-sizing:border-box; }' +
+      'html,body { margin:0; padding:0; color:var(--text); font-family:Segoe UI, Tahoma, Arial, sans-serif; background:#fff; }' +
+      'body { -webkit-print-color-adjust:exact; print-color-adjust:exact; font-size:13px; }' +
+      '.page { display:grid; gap:14px; }' +
+      '.header { display:grid; grid-template-columns: 138px 1fr; gap:14px; align-items:center; padding-bottom:12px; border-bottom:3px solid var(--green); }' +
+      '.header img { width:138px; height:94px; object-fit:cover; border-radius:10px; border:1px solid var(--border); }' +
+      '.kicker { color:var(--green); font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.08em; }' +
+      'h1 { margin:4px 0 2px; color:var(--green-dark); font-size:26px; line-height:1.1; }' +
+      '.subtitle { margin:0; color:var(--muted); line-height:1.45; }' +
+      '.hero { padding:14px 16px; border:1px solid #cddbd2; border-radius:10px; background:var(--green-soft); }' +
+      '.hero h2 { margin:0; color:#15291d; font-size:28px; line-height:1.15; }' +
+      '.hero-meta { display:flex; flex-wrap:wrap; gap:8px 16px; margin-top:8px; color:#405047; }' +
+      '.hero-meta span { font-size:12px; }' +
+      '.section { border:1px solid var(--border); border-radius:10px; overflow:hidden; }' +
+      '.section h3 { margin:0; padding:9px 12px; color:#fff; background:var(--green); font-size:13px; text-transform:uppercase; letter-spacing:.04em; }' +
+      '.grid { display:grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap:0; }' +
+      '.profile-field { min-height:56px; padding:10px 12px; border-top:1px solid var(--border); }' +
+      '.profile-field:nth-child(odd) { border-right:1px solid var(--border); }' +
+      '.profile-field span { display:block; color:var(--muted); font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:.04em; }' +
+      '.profile-field strong { display:block; margin-top:4px; color:var(--text); font-size:14px; line-height:1.3; white-space:pre-wrap; }' +
+      '.wide { grid-column:1 / -1; border-right:0 !important; }' +
+      '.status { display:inline-block; min-width:76px; padding:5px 10px; border-radius:999px; text-align:center; font-size:11px; font-weight:800; }' +
+      '.status.ativo { background:#e7f4ec; color:#215537; border:1px solid #c7ddcf; }' +
+      '.status.inativo { background:#f7eeee; color:#8d3831; border:1px solid #e2c5c2; }' +
+      '.footer { margin-top:4px; padding-top:8px; border-top:1px solid var(--border); color:var(--muted); font-size:10px; display:flex; justify-content:space-between; gap:12px; }' +
+      '</style>' +
+      '</head>' +
+      '<body>' +
+      '<main class="page">' +
+      '<header class="header">' +
+      '<img src="' + escapeHtml(imageUrl) + '" alt="Sede do SINSERMAP" />' +
+      '<div><span class="kicker">SINSERMAP</span><h1>Ficha do associado</h1><p class="subtitle">Cadastro individual gerado pelo sistema interno para conferência e atendimento.</p></div>' +
+      '</header>' +
+      '<section class="hero">' +
+      '<h2>' + escapeHtml(member.nome || '-') + '</h2>' +
+      '<div class="hero-meta">' +
+      '<span><strong>Função:</strong> ' + escapeHtml(member.funcao || '-') + '</span>' +
+      '<span><strong>Matrícula:</strong> ' + escapeHtml(member.matricula || '-') + '</span>' +
+      '<span><strong>Status:</strong> <span class="status ' + escapeHtml(normalizeText(member.status || '')) + '">' + escapeHtml(member.status || '-') + '</span></span>' +
+      '</div>' +
+      '</section>' +
+      '<section class="section"><h3>Dados principais</h3><div class="grid">' +
+      memberProfileField('Nome completo', member.nome) +
+      memberProfileField('CPF', formatCpf(member.cpf)) +
+      memberProfileField('RG', member.rg) +
+      memberProfileField('Data de nascimento', formatDate(member.dataNascimento)) +
+      memberProfileField('Telefone', formatPhone(member.telefone)) +
+      memberProfileField('E-mail', member.email) +
+      '</div></section>' +
+      '<section class="section"><h3>Dados funcionais</h3><div class="grid">' +
+      memberProfileField('Função / cargo', member.funcao) +
+      memberProfileField('Matrícula', member.matricula) +
+      memberProfileField('Data de admissão', formatDate(member.dataAdmissao)) +
+      memberProfileField('Data de associação', formatDate(member.dataAssociacao)) +
+      memberProfileField('Onde trabalha', member.localTrabalho) +
+      memberProfileField('Setor', member.setor) +
+      '</div></section>' +
+      '<section class="section"><h3>Endereço e observações</h3><div class="grid">' +
+      memberProfileField('Endereço', address || '-', 'wide') +
+      memberProfileField('CEP', formatCep ? formatCep(member.cep) : member.cep) +
+      memberProfileField('Observações', member.observacoes || '-', 'wide') +
+      '</div></section>' +
+      '<footer class="footer"><span>SINSERMAP • Cadastro de Associados</span><span>Ficha gerada em ' + escapeHtml(generatedAt) + '</span></footer>' +
+      '</main>' +
+      '</body></html>';
+  }
+
+  function printMemberProfile(id) {
+    var member = findReportMemberById(id);
+    var printWindow;
+
+    if (!member) {
+      setMessage('reportMessage', 'Associado não encontrado na consulta atual.', 'error');
+      return;
+    }
+
+    printWindow = window.open('', '_blank', 'width=900,height=1000');
+
+    if (!printWindow) {
+      setMessage('reportMessage', 'Não foi possível abrir a ficha. Verifique se o navegador bloqueou pop-ups.', 'error');
+      return;
+    }
+
+    printWindow.document.open();
+    printWindow.document.write(buildMemberProfileHtml(member));
+    printWindow.document.close();
+
+    printWindow.onload = function () {
+      printWindow.focus();
+      setTimeout(function () {
+        printWindow.print();
+      }, 250);
+    };
+  }
+
   async function downloadFullBackup() {
     setMessage('reportMessage', 'Gerando backup completo...', 'success');
 
@@ -1995,6 +2187,11 @@
     if (byId('reportPageSize')) {
       byId('reportPageSize').addEventListener('change', changeReportPageSize);
     }
+
+    if (byId('clearFunctionFilterBtn')) {
+      byId('clearFunctionFilterBtn').addEventListener('click', clearFunctionFilter);
+    }
+
     if (byId('exportConsultCsvBtn')) {
       byId('exportConsultCsvBtn').addEventListener('click', exportConsultCsv);
     }
@@ -2033,6 +2230,14 @@
       button.addEventListener('click', function () {
         activateTab(button.getAttribute('data-open-tab'));
       });
+    });
+
+    document.addEventListener('dblclick', function (event) {
+      var printMemberTarget = event.target.closest('[data-print-member]');
+
+      if (printMemberTarget) {
+        printMemberProfile(printMemberTarget.getAttribute('data-print-member'));
+      }
     });
 
     document.addEventListener('click', function (event) {
