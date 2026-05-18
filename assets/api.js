@@ -16,48 +16,15 @@
   }
 
   function getSessionToken() {
-    var token = '';
-
-    try {
-      token = sessionStorage.getItem('assoc_session_token') || '';
-    } catch (error) {
-      token = '';
-    }
-
-    if (token) {
-      return token;
-    }
-
-    try {
-      token = localStorage.getItem('assoc_session_token') || '';
-
-      if (token) {
-        sessionStorage.setItem('assoc_session_token', token);
-        localStorage.removeItem('assoc_session_token');
-      }
-    } catch (error) {
-      token = '';
-    }
-
-    return token;
+    return localStorage.getItem('assoc_session_token') || '';
   }
 
   function setSessionToken(token) {
-    try {
-      sessionStorage.setItem('assoc_session_token', token || '');
-      localStorage.removeItem('assoc_session_token');
-    } catch (error) {
-      localStorage.setItem('assoc_session_token', token || '');
-    }
+    localStorage.setItem('assoc_session_token', token || '');
   }
 
   function clearSessionToken() {
-    try {
-      sessionStorage.removeItem('assoc_session_token');
-      localStorage.removeItem('assoc_session_token');
-    } catch (error) {
-      localStorage.removeItem('assoc_session_token');
-    }
+    localStorage.removeItem('assoc_session_token');
   }
 
   async function parseJsonResponse(response) {
@@ -94,10 +61,6 @@
   }
 
   async function getApi(action, query) {
-    if (getSessionToken()) {
-      return postApi(action, query || {});
-    }
-
     var url = new URL(getApiUrl());
     url.searchParams.set('action', action);
 
@@ -106,6 +69,10 @@
         url.searchParams.set(key, query[key]);
       }
     });
+
+    if (getSessionToken()) {
+      url.searchParams.set('sessionToken', getSessionToken());
+    }
 
     var response = await fetch(url.toString(), { method: 'GET' });
     return parseJsonResponse(response);

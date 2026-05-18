@@ -27,12 +27,12 @@
         <form id="loginForm" class="grid">
           <label>
             Usuário
-            <input id="loginUsername" autocomplete="username" />
+            <input id="loginUsername" value="admin" autocomplete="username" />
           </label>
 
           <label>
             Senha
-            <input id="loginPassword" type="password" autocomplete="current-password" />
+            <input id="loginPassword" type="password" autocomplete="current-password" value="123456" />
           </label>
 
           <div class="actions login-actions">
@@ -81,8 +81,8 @@
       <nav class="tabs desktop-tabs" aria-label="Navegação principal">
         <button class="tab-btn active" data-tab="inicio" type="button">Início</button>
         <button class="tab-btn" data-tab="relatorios" type="button">Consulta</button>
-        <button class="tab-btn" data-tab="cadastro" data-editor-only type="button">Cadastrar</button>
-        <button class="tab-btn" data-tab="listas" data-admin-only type="button">Configurações</button>
+        <button class="tab-btn" data-tab="cadastro" type="button">Cadastrar</button>
+        <button class="tab-btn" data-tab="listas" type="button">Configurações</button>
       </nav>
 
       <section id="tab-inicio" class="tab-panel active">
@@ -134,7 +134,7 @@
         </div>
       </section>
 
-      <section id="tab-cadastro" class="tab-panel" data-editor-only>
+      <section id="tab-cadastro" class="tab-panel">
         <section class="card">
           <div class="section-head">
             <div>
@@ -155,54 +155,10 @@
 
             <div id="memberDuplicateNotice" class="duplicate-notice hidden"></div>
 
-            <div class="grid cols-3">
+            <div class="grid cols-4 member-priority-grid">
               <label>
                 Nome completo *
                 <input id="memberNome" required placeholder="Nome do associado" />
-              </label>
-
-              <label>
-                CPF
-                <input id="memberCpf" inputmode="numeric" placeholder="000.000.000-00" />
-              </label>
-
-              <label>
-                RG
-                <input id="memberRg" placeholder="Documento de identidade" />
-              </label>
-            </div>
-
-            <div class="grid cols-4">
-              <label>
-                Data de nascimento
-                <input id="memberDataNascimento" type="date" />
-              </label>
-
-              <label>
-                Telefone
-                <input id="memberTelefone" placeholder="(00) 00000-0000" />
-              </label>
-
-              <label>
-                E-mail
-                <input id="memberEmail" type="email" placeholder="email@exemplo.com" />
-              </label>
-
-              <label>
-                Data de admissão
-                <input id="memberDataAdmissao" type="date" />
-              </label>
-            </div>
-
-            <div class="grid cols-4">
-              <label>
-                Onde trabalha
-                <input id="memberLocalTrabalho" list="localTrabalhoList" placeholder="Ex.: Prefeitura, Escola..." />
-              </label>
-
-              <label>
-                Setor
-                <input id="memberSetor" list="setorList" placeholder="Ex.: Educação, Saúde..." />
               </label>
 
               <label>
@@ -213,6 +169,50 @@
               <label>
                 Matrícula
                 <input id="memberMatricula" placeholder="Matrícula funcional" />
+              </label>
+
+              <label>
+                Data de admissão
+                <input id="memberDataAdmissao" type="date" />
+              </label>
+            </div>
+
+            <div class="grid cols-4">
+              <label>
+                CPF
+                <input id="memberCpf" inputmode="numeric" placeholder="000.000.000-00" />
+              </label>
+
+              <label>
+                RG
+                <input id="memberRg" placeholder="Documento de identidade" />
+              </label>
+
+              <label>
+                Data de nascimento
+                <input id="memberDataNascimento" type="date" />
+              </label>
+
+              <label>
+                Telefone
+                <input id="memberTelefone" placeholder="(00) 00000-0000" />
+              </label>
+            </div>
+
+            <div class="grid cols-3">
+              <label>
+                E-mail
+                <input id="memberEmail" type="email" placeholder="email@exemplo.com" />
+              </label>
+
+              <label>
+                Onde trabalha
+                <input id="memberLocalTrabalho" list="localTrabalhoList" placeholder="Ex.: Prefeitura, Escola..." />
+              </label>
+
+              <label>
+                Setor
+                <input id="memberSetor" list="setorList" placeholder="Ex.: Educação, Saúde..." />
               </label>
             </div>
 
@@ -268,7 +268,7 @@
         </section>
       </section>
 
-      <section id="tab-listas" class="tab-panel" data-admin-only>
+      <section id="tab-listas" class="tab-panel">
         <section class="card">
           <div class="section-head">
             <div>
@@ -289,7 +289,7 @@
 
             <p id="usersMessage" class="message"></p>
 
-            <form id="userForm" class="grid cols-4">
+            <form id="userForm" class="grid cols-3">
               <label>
                 Nome
                 <input id="userNome" placeholder="Nome do usuário" autocomplete="off" />
@@ -302,16 +302,7 @@
 
               <label>
                 Senha
-                <input id="userPassword" type="password" placeholder="Mínimo 8 caracteres com letras e números" autocomplete="new-password" />
-              </label>
-
-              <label>
-                Perfil
-                <select id="userRole">
-                  <option value="OPERADOR">Operador: cadastro e consulta</option>
-                  <option value="LEITURA">Leitura: apenas consulta</option>
-                  <option value="ADMIN">Administrador: acesso total</option>
-                </select>
+                <input id="userPassword" type="password" placeholder="Senha de acesso" autocomplete="new-password" />
               </label>
 
               <div class="actions">
@@ -326,13 +317,12 @@
                   <tr>
                     <th>Nome</th>
                     <th>Usuário</th>
-                    <th>Perfil</th>
                     <th>Criado em</th>
                     <th>Ações</th>
                   </tr>
                 </thead>
                 <tbody id="usersTableBody">
-                  <tr><td colspan="5">Carregando...</td></tr>
+                  <tr><td colspan="4">Carregando...</td></tr>
                 </tbody>
               </table>
             </div>
@@ -448,13 +438,13 @@
             </div>
             <div class="actions report-export-actions">
               <button id="printReportBtn" class="btn btn-secondary" type="button">Gerar PDF</button>
-              <button id="exportReportExcelBtn" class="btn btn-secondary" type="button">Exportar Excel compatível</button>
-              <button id="backupFullBtn" class="btn btn-secondary" data-admin-only type="button">Backup completo</button>
+              <button id="exportReportExcelBtn" class="btn btn-secondary" type="button">Exportar Excel</button>
+              <button id="backupFullBtn" class="btn btn-secondary" type="button">Backup completo</button>
             </div>
           </div>
 
           <div class="report-filter-panel">
-            <div class="grid cols-4 report-filter-grid">
+            <div class="grid cols-2 report-filter-grid report-main-search-grid">
               <label>
                 Nome
                 <input id="reportNome" placeholder="Digite parte do nome" />
@@ -464,61 +454,67 @@
                 CPF
                 <input id="reportCpf" inputmode="numeric" placeholder="000.000.000-00" />
               </label>
-
-              <label>
-                Onde trabalha
-                <select id="reportLocalTrabalho">
-                  <option value="">Todos</option>
-                </select>
-              </label>
-
-              <label>
-                Setor
-                <select id="reportSetor">
-                  <option value="">Todos</option>
-                </select>
-              </label>
             </div>
 
-            <div class="grid cols-4 report-filter-grid mt-16">
-              <label>
-                Função
-                <select id="reportFuncao">
-                  <option value="">Todas</option>
-                </select>
-              </label>
+            <details class="advanced-filter-panel">
+              <summary>Filtros avançados</summary>
 
-              <label>
-                Status
-                <select id="reportStatus">
-                  <option value="">Todos</option>
-                  <option value="ATIVO">Ativo</option>
-                  <option value="INATIVO">Inativo</option>
-                </select>
-              </label>
+              <div class="grid cols-4 report-filter-grid mt-16">
+                <label>
+                  Onde trabalha
+                  <select id="reportLocalTrabalho">
+                    <option value="">Todos</option>
+                  </select>
+                </label>
 
-              <label>
-                Data inicial de admissão
-                <input id="reportDataInicial" type="date" />
-              </label>
+                <label>
+                  Setor
+                  <select id="reportSetor">
+                    <option value="">Todos</option>
+                  </select>
+                </label>
 
-              <label>
-                Data final de admissão
-                <input id="reportDataFinal" type="date" />
-              </label>
-            </div>
+                <label>
+                  Função
+                  <select id="reportFuncao">
+                    <option value="">Todas</option>
+                  </select>
+                </label>
+
+                <label>
+                  Status
+                  <select id="reportStatus">
+                    <option value="">Todos</option>
+                    <option value="ATIVO">Ativo</option>
+                    <option value="INATIVO">Inativo</option>
+                  </select>
+                </label>
+              </div>
+
+              <div class="grid cols-4 report-filter-grid mt-16">
+                <label>
+                  Data inicial de admissão
+                  <input id="reportDataInicial" type="date" />
+                </label>
+
+                <label>
+                  Data final de admissão
+                  <input id="reportDataFinal" type="date" />
+                </label>
+
+                <label class="report-sort-label">
+                  Ordenar por
+                  <select id="reportSortBy">
+                    <option value="nome">Nome</option>
+                    <option value="localTrabalho">Onde trabalha</option>
+                    <option value="setor">Setor</option>
+                    <option value="funcao">Função</option>
+                  </select>
+                </label>
+              </div>
+            </details>
 
             <div class="report-filter-footer">
-              <label class="report-sort-label">
-                Ordenar por
-                <select id="reportSortBy">
-                  <option value="nome">Nome</option>
-                  <option value="localTrabalho">Onde trabalha</option>
-                  <option value="setor">Setor</option>
-                  <option value="funcao">Função</option>
-                </select>
-              </label>
-
               <div class="actions report-filter-actions">
                 <button id="loadReportBtn" class="btn btn-primary" type="button">Buscar</button>
                 <button id="clearReportFiltersBtn" class="btn btn-secondary" type="button">Limpar filtros</button>
@@ -537,6 +533,7 @@
                   <h2>Por função</h2>
                   <p class="muted">Ex.: motorista, professor.</p>
                 </div>
+                <button id="clearFunctionFilterBtn" class="btn btn-secondary no-print" type="button">Ver todos</button>
               </div>
               <div class="table-wrap">
                 <table class="function-summary-table">
@@ -558,18 +555,14 @@
                 <table class="report-members-table">
                   <thead>
                     <tr>
-                      <th>Nome</th>
-                      <th>Admissão</th>
-                      <th>Telefone</th>
-                      <th>Onde trabalha</th>
-                      <th>Setor</th>
-                      <th>Função</th>
+                      <th>Associado</th>
+                      <th>Dados funcionais</th>
                       <th>Status</th>
-                      <th>Ações</th>
+                      <th class="actions-col">Ações</th>
                     </tr>
                   </thead>
                   <tbody id="reportMembersBody">
-                    <tr><td colspan="8">Gere o relatório para visualizar a lista.</td></tr>
+                    <tr><td colspan="4">Gere o relatório para visualizar a lista.</td></tr>
                   </tbody>
                 </table>
               </div>

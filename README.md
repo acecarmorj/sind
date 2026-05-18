@@ -12,8 +12,8 @@ O sistema mantém:
 - cadastro de associados;
 - consulta de associados;
 - relatórios por onde trabalha, setor, função/cargo e status;
-- configuração com usuários do sistema, perfis de acesso, listas editáveis e informações do painel público;
-- exportação CSV/Excel compatível;
+- configuração com usuários do sistema, listas editáveis e informações do painel público;
+- exportação CSV;
 - impressão de relatório;
 - painel público com agenda, comunicados, documentos, atas, cursos, serviços e contato do sindicato.
 
@@ -69,22 +69,6 @@ Quando você executar `setupDatabase()` dentro do Apps Script aberto pela própr
 6. Execute a função `setupDatabase`.
 7. Autorize o acesso quando o Google pedir.
 8. Confirme que as abas foram criadas na mesma planilha.
-9. Crie o primeiro administrador executando no Apps Script:
-
-```javascript
-createInitialAdmin('admin', 'TroquePorUmaSenhaForte2026', 'Administrador');
-```
-
-Use uma senha própria, com pelo menos 8 caracteres, letras e números. O sistema não cria mais senha padrão automática.
-
-Se o usuário `admin` já existir mas estiver sem privilégios de administrador, execute:
-
-```javascript
-grantAdminPrivilegesToAdminUser();
-```
-
-Essa função garante que o usuário `admin` fique com perfil `ADMIN` e status `ATIVO`.
-
 
 ## Publicar como Web App
 
@@ -146,54 +130,23 @@ A aba **Configuração** permite cadastrar e remover usuários do sistema, cadas
 Os usuários ficam salvos na aba `Usuarios`. As opções ficam salvas na aba `ListasCadastro` da mesma planilha. Depois de alterar a API, publique uma nova versão da implantação do Apps Script.
 
 
-### Usuários do sistema e perfis
+### Usuários do sistema
 
-A tela **Configuração** agora é exclusiva para administradores.
+Na tela **Configuração**, qualquer usuário logado pode:
 
-Perfis disponíveis:
+- adicionar novo usuário com nome, usuário e senha;
+- remover usuários antigos.
 
-- `ADMIN`: acesso total, usuários, configurações, painel público e backup completo;
-- `OPERADOR`: cadastro, edição, inativação, consulta, relatórios e importação de data de admissão;
-- `LEITURA`: consulta e relatórios, sem alteração de dados.
-
-O sistema mantém proteção para não remover o último usuário ativo.
+Não foi criada regra de permissão entre usuários. O sistema mantém apenas uma proteção para não remover o último usuário ativo.
 
 ## Login inicial
 
-Não existe mais senha padrão `admin / 123456`.
-
-Depois de executar `setupDatabase`, crie o primeiro administrador no Apps Script com:
-
-```javascript
-createInitialAdmin('admin', 'TroquePorUmaSenhaForte2026', 'Administrador');
+```text
+Usuário: admin
+Senha: 123456
 ```
 
-Se já existir uma instalação antiga usando senha fraca, redefina a senha pelo Apps Script:
-
-```javascript
-resetUserPassword('admin', 'NovaSenhaForte2026');
-```
-
-Senhas fracas conhecidas, como `123456`, são bloqueadas no login.
-
-## Segurança e regras aplicadas
-
-Esta versão inclui correções importantes:
-
-- senha inicial automática removida;
-- hash de senha com salt e iterações;
-- sessão armazenada preferencialmente por aba (`sessionStorage`);
-- chamadas autenticadas feitas por `POST`, evitando token de sessão na URL;
-- permissões por perfil no back-end e no front-end;
-- CPF validado com dígitos verificadores;
-- CPF e matrícula duplicados bloqueados para associados ativos;
-- exclusão de associado trocada por inativação, preservando histórico;
-- backup completo corrigido;
-- pasta `.git` removida do pacote final.
-
-## Backup completo
-
-O backup completo fica disponível apenas para administradores e exporta JSON com associados, usuários, listas, painel público e auditoria.
+Para alterar a senha inicial, edite `ADMIN_PASSWORD` no começo de `api.txt` ou `backend/Code.gs` antes da primeira execução.
 
 ## Campos do associado
 
@@ -211,7 +164,6 @@ O cadastro possui campos para:
 - função/cargo, como motorista, professor etc.;
 - matrícula;
 - data de associação;
-- data de admissão;
 - status;
 - observações.
 ## Painel público no celular

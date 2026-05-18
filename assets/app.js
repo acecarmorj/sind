@@ -6,20 +6,14 @@
 
   var state = {
     user: null,
-    permissions: {
-      role: 'LEITURA',
-      canManageSettings: false,
-      canManageUsers: false,
-      canBackup: false,
-      canEditMembers: false,
-      canViewReports: true
-    },
     members: [],
     recentMembers: [],
     report: null,
     reportPage: 1,
     reportPageSize: 50,
     reportActiveFuncao: '',
+    reportLoaded: false,
+    reportLoading: false,
     users: [],
     publicItems: [],
     publicGroups: {},
@@ -77,44 +71,6 @@
   function all(selector) {
     return Array.prototype.slice.call(document.querySelectorAll(selector));
   }
-
-  function currentPermissions() {
-    return state.permissions || {};
-  }
-
-  function canManageSettings() {
-    return currentPermissions().canManageSettings === true;
-  }
-
-  function canEditMembers() {
-    return currentPermissions().canEditMembers === true;
-  }
-
-  function setVisibleBySelector(selector, visible) {
-    all(selector).forEach(function (element) {
-      element.classList.toggle('hidden', !visible);
-    });
-  }
-
-  function applyPermissions() {
-    var canManage = canManageSettings();
-    var canEdit = canEditMembers();
-    var activeTab = document.querySelector('[data-tab].active');
-
-    setVisibleBySelector('[data-tab="listas"]', canManage);
-    setVisibleBySelector('[data-tab="cadastro"]', canEdit);
-    setVisibleBySelector('[data-admin-only]', canManage);
-    setVisibleBySelector('[data-editor-only]', canEdit);
-
-    if (activeTab && activeTab.getAttribute('data-tab') === 'listas' && !canManage) {
-      activateTab('inicio');
-    }
-
-    if (activeTab && activeTab.getAttribute('data-tab') === 'cadastro' && !canEdit) {
-      activateTab('inicio');
-    }
-  }
-
 
   function text(id, value) {
     var el = byId(id);
@@ -197,6 +153,16 @@
     return value || '-';
   }
 
+  function formatCep(value) {
+    var cep = digits(value);
+
+    if (cep.length === 8) {
+      return cep.replace(/^(\d{5})(\d{3})$/, '$1-$2');
+    }
+
+    return value || '-';
+  }
+
   function formatDate(value) {
     if (!value) return '-';
     var parts = String(value).slice(0, 10).split('-');
@@ -273,27 +239,17 @@
         return '- ' + item.motivos.join(', ') + ': ' +
           (item.nome || '-') + ' / ' + (item.funcao || '-');
       }).join('\n') +
-      '\n\nO sistema bloqueia CPF e matrícula iguais em associados ativos. Para nome e função iguais, confira antes de continuar. Deseja salvar mesmo assim?';
+      '\n\nDeseja salvar mesmo assim?';
   }
 
   async function confirmPossibleDuplicate(payload) {
     var response = await api.postApi('member_duplicates', payload);
     var duplicates = response.duplicates || [];
-    var blockingDuplicate = duplicates.some(function (item) {
-      return (item.motivos || []).some(function (motivo) {
-        return motivo === 'CPF igual' || motivo === 'Matrícula igual';
-      });
-    });
 
     setDuplicateNotice(duplicates);
 
     if (!duplicates.length) {
       return true;
-    }
-
-    if (blockingDuplicate) {
-      setMessage('memberMessage', 'CPF ou matrícula já vinculados a associado ativo. Corrija antes de salvar.', 'error');
-      return false;
     }
 
     return window.confirm(duplicateConfirmText(duplicates));
@@ -347,6 +303,11 @@
     document.querySelectorAll('.tab-panel').forEach(function (panel) {
       panel.classList.toggle('active', panel.id === 'tab-' + tabName);
     });
+
+    if (tabName === 'relatorios' && !state.reportLoaded && !state.reportLoading) {
+      state.reportPage = 1;
+      loadReport();
+    }
   }
 
   function activatePublicSection(sectionName) {
@@ -416,8 +377,7 @@
   function badge(status) {
     var value = status || 'ATIVO';
     var safeValue = escapeHtml(value);
-    var noBreakLabel = safeValue.split('').join('&#8288;');
-    return '<span class="badge status-badge ' + safeValue + '" aria-label="' + safeValue + '">' + noBreakLabel + '</span>';
+    return '<span class="badge status-badge ' + safeValue + '" aria-label="' + safeValue + '">' + safeValue + '</span>';
   }
 
   function memberRow(member, includeActions) {
@@ -432,7 +392,7 @@
     ];
 
     if (includeActions) {
-      cells.push(canEditMembers() ?
+      cells.push(
         '<div class="actions member-row-actions">' +
         '<button class="btn btn-secondary" type="button" data-edit-member="' +
         escapeHtml(member.id) +
@@ -441,15 +401,60 @@
         escapeHtml(member.id) +
         '" data-member-name="' +
         escapeHtml(member.nome || '') +
-        '">Inativar</button>' +
-        '</div>' :
-        '<span class="muted">Somente leitura</span>'
+        '">Excluir</button>' +
+        '</div>'
       );
     }
 
     return '<tr>' + cells.map(function (cell) {
       return '<td>' + cell + '</td>';
     }).join('') + '</tr>';
+  }
+
+  function memberActions(member) {
+    return '<div class="actions member-row-actions">' +
+      '<button class="btn btn-secondary" type="button" data-edit-member="' +
+      escapeHtml(member.id) +
+      '">Editar</button>' +
+      '<button class="btn btn-secondary" type="button" data-delete-member="' +
+      escapeHtml(member.id) +
+      '" data-member-name="' +
+      escapeHtml(member.nome || '') +
+      '">Excluir</button>' +
+      '</div>';
+  }
+
+  function reportMetaLine(label, value) {
+    return '<span><b>' + escapeHtml(label) + ':</b> ' + escapeHtml(value || '-') + '</span>';
+  }
+
+  function reportStatusText(status) {
+    var value = status || 'ATIVO';
+    var className = normalizeText(value) === 'inativo' ? 'is-inactive' : 'is-active';
+
+    return '<span class="report-status-badge ' + className + '">' + escapeHtml(value) + '</span>';
+  }
+
+  function reportMemberRow(member) {
+    return '<tr>' +
+      '<td class="report-person-cell" data-print-member="' + escapeHtml(member.id) + '" title="Clique duas vezes para gerar a ficha em PDF">' +
+      '<strong class="report-member-name">' + escapeHtml(member.nome || '-') + '</strong>' +
+      '<div class="report-member-meta">' +
+      reportMetaLine('Admissão', formatDate(member.dataAdmissao)) +
+      reportMetaLine('Telefone', formatPhone(member.telefone)) +
+      reportMetaLine('Matrícula', member.matricula || '-') +
+      '</div>' +
+      '</td>' +
+      '<td class="report-work-cell">' +
+      '<strong class="report-member-function">' + escapeHtml(member.funcao || '-') + '</strong>' +
+      '<div class="report-member-meta">' +
+      reportMetaLine('Setor', member.setor || '-') +
+      reportMetaLine('Onde trabalha', member.localTrabalho || '-') +
+      '</div>' +
+      '</td>' +
+      '<td class="report-status-cell">' + reportStatusText(member.status) + '</td>' +
+      '<td class="report-actions-cell">' + memberActions(member) + '</td>' +
+      '</tr>';
   }
 
   function groupRow(item, labelFallback) {
@@ -459,7 +464,9 @@
 
   function functionGroupRow(item) {
     var label = item.label || 'Não informado';
-    return '<tr class="report-function-row" data-report-funcao="' + escapeHtml(label) + '">' +
+    var selectedClass = normalizeText(state.reportActiveFuncao || '') === normalizeText(label) ? ' is-selected' : '';
+
+    return '<tr class="report-function-row' + selectedClass + '" data-report-funcao="' + escapeHtml(label) + '">' +
       '<td>' + escapeHtml(label) + '</td>' +
       '<td>' + escapeHtml(item.total) + '</td>' +
       '</tr>';
@@ -467,11 +474,10 @@
 
   function renderDashboard(data) {
     var stats = data.stats || {};
-    var roleLabel = state.permissions && state.permissions.role ? state.permissions.role : '-';
     state.recentMembers = data.recentMembers || [];
 
     text('unionName', data.unionName || runtime.UNION_NAME_FALLBACK || 'Cadastro de Associados');
-    text('buildInfo', 'Usuário: ' + (state.user && state.user.nome ? state.user.nome : 'admin') + ' • Perfil: ' + roleLabel + ' • ' + runtime.BUILD_VERSION);
+    text('buildInfo', 'Usuário: ' + (state.user && state.user.nome ? state.user.nome : 'admin') + ' • ' + runtime.BUILD_VERSION);
     text('statTotal', stats.total || 0);
     text('statAtivos', stats.ativos || 0);
     text('statInativos', stats.inativos || 0);
@@ -510,6 +516,7 @@
 
   function renderReport(report) {
     state.report = report || {};
+    state.reportLoaded = true;
     state.reportPage = 1;
     state.reportActiveFuncao = '';
 
@@ -526,32 +533,35 @@
   function renderReportMembers(members, funcao) {
     var filteredMembers = members || [];
     var pageSize = Number(value('reportPageSize') || state.reportPageSize || 50);
-
-    state.reportActiveFuncao = funcao || '';
-    state.reportPageSize = pageSize > 0 ? pageSize : 50;
+    var total;
+    var totalPages;
+    var start;
+    var pageMembers;
+    var end;
+    var rangeLabel;
 
     if (funcao) {
       filteredMembers = filteredMembers.filter(function (member) {
-        return normalizeText(member.funcao || 'Não informado') === normalizeText(funcao);
+        return normalizeText(member.funcao || 'Nao informado') === normalizeText(funcao);
       });
     }
 
-    var total = filteredMembers.length;
-    var totalPages = Math.max(1, Math.ceil(total / state.reportPageSize));
-
-    if (state.reportPage < 1) {
-      state.reportPage = 1;
-    }
+    total = filteredMembers.length;
+    totalPages = Math.max(1, Math.ceil(total / pageSize));
 
     if (state.reportPage > totalPages) {
       state.reportPage = totalPages;
     }
 
-    var startIndex = (state.reportPage - 1) * state.reportPageSize;
-    var pageMembers = filteredMembers.slice(startIndex, startIndex + state.reportPageSize);
-    var rangeLabel = total ?
-      ' Mostrando ' + (startIndex + 1) + '-' + (startIndex + pageMembers.length) + ' de ' + total + '.' :
+    start = (state.reportPage - 1) * pageSize;
+    pageMembers = filteredMembers.slice(start, start + pageSize);
+    end = start + pageMembers.length;
+    rangeLabel = total ?
+      ' Mostrando ' + (start + 1) + '-' + end + ' de ' + total + '.' :
       '';
+
+    state.reportActiveFuncao = funcao || '';
+    state.reportPageSize = pageSize > 0 ? pageSize : 50;
 
     text(
       'reportListCount',
@@ -574,8 +584,8 @@
     }
 
     html('reportMembersBody', pageMembers.length ?
-      pageMembers.map(function (member) { return memberRow(member, true); }).join('') :
-      '<tr><td colspan="8">Nenhum associado encontrado para o relatório.</td></tr>');
+      pageMembers.map(reportMemberRow).join('') :
+      '<tr><td colspan="4">Nenhum associado encontrado para o relatório.</td></tr>');
   }
 
   function rerenderReportPage() {
@@ -583,6 +593,14 @@
       state.report && state.report.members ? state.report.members : [],
       state.reportActiveFuncao
     );
+  }
+
+  function reportHasPartialData() {
+    var report = state.report || {};
+    var total = Number(report.summary && report.summary.total || 0);
+    var loaded = report.members ? report.members.length : 0;
+
+    return total > loaded;
   }
 
   function changeReportPage(direction) {
@@ -594,6 +612,16 @@
     state.reportPage = 1;
     state.reportPageSize = Number(value('reportPageSize') || 50);
     rerenderReportPage();
+  }
+
+  function clearFunctionFilter() {
+    state.reportPage = 1;
+    state.reportActiveFuncao = '';
+    document.querySelectorAll('[data-report-funcao]').forEach(function (row) {
+      row.classList.remove('is-selected');
+    });
+
+    renderReportMembers(state.report && state.report.members ? state.report.members : [], '');
   }
 
   function resetMemberForm() {
@@ -695,6 +723,23 @@
     };
   }
 
+  function reportRequestFilters(includeAll) {
+    var filters = queryFilters('report');
+
+    filters.page = state.reportPage || 1;
+    filters.pageSize = Number(value('reportPageSize') || state.reportPageSize || 50);
+
+    if (state.reportActiveFuncao) {
+      filters.funcao = state.reportActiveFuncao;
+    }
+
+    if (includeAll) {
+      filters.includeAll = true;
+    }
+
+    return filters;
+  }
+
   function consultFilters() {
     return {
       search: value('filterSearch'),
@@ -746,19 +791,60 @@
 
     setValue('reportSortBy', 'nome');
     state.reportPage = 1;
+    state.reportActiveFuncao = '';
     loadReport();
   }
 
-  async function loadReport() {
-    clearMessages();
+  function searchReport() {
+    state.reportPage = 1;
+    state.reportActiveFuncao = value('reportFuncao');
+    loadReport();
+  }
+
+  function preloadReport() {
+    if (state.reportLoaded || state.reportLoading) {
+      return;
+    }
+
+    window.setTimeout(function () {
+      loadReport({
+        silent: true,
+        filters: {
+          sortBy: 'nome',
+          sortDir: 'asc'
+        }
+      });
+    }, 250);
+  }
+
+  async function loadReport(options) {
+    var silent = options && options.silent;
+    var filters = options && options.filters ? options.filters : queryFilters('report');
+
+    filters.includeAll = true;
+
+    if (!silent) {
+      clearMessages();
+    }
+
+    if (state.reportLoading) {
+      return;
+    }
+
+    state.reportLoading = true;
 
     try {
-      state.reportPage = 1;
-      var response = await api.getApi('reports_associados', queryFilters('report'));
+      var response = await api.getApi('reports_associados', filters);
       renderReport(response.report || {});
-      setMessage('reportMessage', 'Consulta carregada com sucesso.', 'success');
+      if (!silent) {
+        setMessage('reportMessage', 'Consulta carregada com sucesso.', 'success');
+      }
     } catch (error) {
-      setMessage('reportMessage', error.message || 'Falha ao consultar associados.', 'error');
+      if (!silent) {
+        setMessage('reportMessage', error.message || 'Falha ao consultar associados.', 'error');
+      }
+    } finally {
+      state.reportLoading = false;
     }
   }
 
@@ -1007,10 +1093,6 @@
   }
 
   async function loadPublicItemsAdmin() {
-    if (!canManageSettings()) {
-      return;
-    }
-
     var response = await api.getApi('public_items_list');
     renderPublicItemsAdmin(response.items || []);
   }
@@ -1018,11 +1100,6 @@
   async function savePublicItem(event) {
     event.preventDefault();
     clearMessages();
-
-    if (!canManageSettings()) {
-      setMessage('publicConfigMessage', 'Apenas administradores podem alterar o painel público.', 'error');
-      return;
-    }
 
     var payload = publicItemPayload();
 
@@ -1068,11 +1145,6 @@
   }
 
   async function deletePublicItem(id) {
-    if (!canManageSettings()) {
-      setMessage('publicConfigMessage', 'Apenas administradores podem alterar o painel público.', 'error');
-      return;
-    }
-
     var item = (state.publicItems || []).find(function (publicItem) {
       return publicItem.id === id;
     });
@@ -1119,11 +1191,6 @@
   async function loadBootstrap() {
     var response = await api.getApi('app_bootstrap');
 
-    if (response.permissions) {
-      state.permissions = response.permissions;
-    }
-
-    applyPermissions();
     fillOptions(response.options || {});
     renderUsers(response.users || []);
     renderPublicItemsAdmin(response.publicItems || []);
@@ -1138,6 +1205,8 @@
 
       if (byId('tab-relatorios').classList.contains('active')) {
         await loadReport();
+      } else {
+        preloadReport();
       }
 
       setMessage('globalMessage', 'Sistema atualizado.', 'success');
@@ -1149,11 +1218,6 @@
   async function saveMember(event) {
     event.preventDefault();
     clearMessages();
-
-    if (!canEditMembers()) {
-      setMessage('memberMessage', 'Seu perfil permite apenas consulta e relatórios.', 'error');
-      return;
-    }
 
     var payload = memberPayload();
 
@@ -1174,6 +1238,8 @@
       fillMemberForm(response.member);
       setMessage('memberMessage', payload.id ? 'Associado atualizado com sucesso.' : 'Associado salvo com sucesso.', 'success');
       await loadBootstrap();
+      state.reportLoaded = false;
+      preloadReport();
     } catch (error) {
       setMessage('memberMessage', error.message || 'Falha ao salvar associado.', 'error');
     }
@@ -1209,31 +1275,29 @@
   async function deleteMember(id, name) {
     clearMessages();
 
-    if (!canEditMembers()) {
-      setMessage('reportMessage', 'Seu perfil permite apenas consulta e relatórios.', 'error');
-      return;
-    }
-
     if (!id) {
-      setMessage('reportMessage', 'Associado não informado para inativação.', 'error');
+      setMessage('reportMessage', 'Associado não informado para exclusão.', 'error');
       return;
     }
 
-    if (!window.confirm('Inativar o associado "' + (name || 'selecionado') + '"? O registro será mantido no histórico.')) {
+    if (!window.confirm('Excluir o associado "' + (name || 'selecionado') + '"? O cadastro ficará arquivado e sairá das consultas.')) {
       return;
     }
 
     try {
       await api.postApi('member_delete', { id: id });
       await loadDashboard();
+      state.reportLoaded = false;
 
       if (byId('tab-relatorios') && byId('tab-relatorios').classList.contains('active')) {
         await loadReport();
+      } else {
+        preloadReport();
       }
 
-      setMessage('reportMessage', 'Associado inativado com sucesso.', 'success');
+      setMessage('reportMessage', 'Associado excluído das consultas com sucesso.', 'success');
     } catch (error) {
-      setMessage('reportMessage', error.message || 'Falha ao inativar associado.', 'error');
+      setMessage('reportMessage', error.message || 'Falha ao excluir associado.', 'error');
     }
   }
 
@@ -1324,11 +1388,6 @@
     event.preventDefault();
     clearMessages();
 
-    if (!canManageSettings()) {
-      setMessage('optionsMessage', 'Apenas administradores podem alterar configurações.', 'error');
-      return;
-    }
-
     var form = event.currentTarget;
     var type = form.getAttribute('data-option-type');
     var config = optionConfig(type);
@@ -1372,11 +1431,6 @@
   }
 
   async function deleteOption(type, id) {
-    if (!canManageSettings()) {
-      setMessage('optionsMessage', 'Apenas administradores podem alterar configurações.', 'error');
-      return;
-    }
-
     var config = optionConfig(type);
     var item = optionItems(type).find(function (option) {
       return option.id === id;
@@ -1409,19 +1463,13 @@
     setValue('userNome', '');
     setValue('userUsername', '');
     setValue('userPassword', '');
-    setValue('userRole', 'OPERADOR');
   }
 
   function renderUsers(users) {
     state.users = users || [];
 
-    if (!canManageSettings()) {
-      html('usersTableBody', '<tr><td colspan="5">Apenas administradores gerenciam usuários.</td></tr>');
-      return;
-    }
-
     if (!state.users.length) {
-      html('usersTableBody', '<tr><td colspan="5">Nenhum usuário ativo cadastrado.</td></tr>');
+      html('usersTableBody', '<tr><td colspan="4">Nenhum usuário ativo cadastrado.</td></tr>');
       return;
     }
 
@@ -1429,7 +1477,6 @@
       return '<tr>' +
         '<td>' + escapeHtml(user.nome || '-') + '</td>' +
         '<td>' + escapeHtml(user.username || '-') + '</td>' +
-        '<td>' + escapeHtml(user.role || '-') + '</td>' +
         '<td>' + escapeHtml(formatDateTime(user.createdAt)) + '</td>' +
         '<td>' +
           '<button class="btn btn-secondary" type="button" data-delete-user="' + escapeHtml(user.id) + '">Remover</button>' +
@@ -1439,11 +1486,6 @@
   }
 
   async function loadUsers() {
-    if (!canManageSettings()) {
-      renderUsers([]);
-      return;
-    }
-
     var response = await api.getApi('users_list');
     renderUsers(response.users || []);
   }
@@ -1452,25 +1494,14 @@
     event.preventDefault();
     clearMessages();
 
-    if (!canManageSettings()) {
-      setMessage('usersMessage', 'Apenas administradores podem adicionar usuários.', 'error');
-      return;
-    }
-
     var payload = {
       nome: value('userNome'),
       username: value('userUsername'),
-      password: value('userPassword'),
-      role: value('userRole') || 'OPERADOR'
+      password: value('userPassword')
     };
 
     if (!payload.nome || !payload.username || !payload.password) {
       setMessage('usersMessage', 'Preencha nome, usuário e senha.', 'error');
-      return;
-    }
-
-    if (payload.password.length < 8) {
-      setMessage('usersMessage', 'A senha deve ter pelo menos 8 caracteres.', 'error');
       return;
     }
 
@@ -1485,11 +1516,6 @@
   }
 
   async function deleteUser(id) {
-    if (!canManageSettings()) {
-      setMessage('usersMessage', 'Apenas administradores podem remover usuários.', 'error');
-      return;
-    }
-
     var user = (state.users || []).find(function (item) {
       return item.id === id;
     });
@@ -1720,11 +1746,6 @@
     event.preventDefault();
     clearMessages();
 
-    if (!canEditMembers()) {
-      setMessage('admissionImportMessage', 'Seu perfil permite apenas consulta e relatórios.', 'error');
-      return;
-    }
-
     var rows = parseAdmissionImport(value('admissionImportText'));
 
     if (!rows.length) {
@@ -1799,7 +1820,7 @@
   }
 
   function exportReportExcel() {
-    var members = state.report && state.report.members ? state.report.members : [];
+    var members = filteredReportMembers();
 
     if (!members.length) {
       setMessage('reportMessage', 'Busque um relatório antes de exportar.', 'error');
@@ -1973,12 +1994,133 @@
       '</body></html>';
   }
 
-  async function downloadFullBackup() {
-    if (!currentPermissions().canBackup) {
-      setMessage('reportMessage', 'Apenas administradores podem gerar backup completo.', 'error');
+  function findReportMemberById(id) {
+    var members = state.report && state.report.members ? state.report.members : [];
+    return members.find(function (member) {
+      return member.id === id;
+    });
+  }
+
+  function memberProfileField(label, value, className) {
+    return '<div class="profile-field ' + escapeHtml(className || '') + '"><span>' + escapeHtml(label) + '</span><strong>' + escapeHtml(value || '-') + '</strong></div>';
+  }
+
+  function buildMemberProfileHtml(member) {
+    var generatedAt = formatDateTime(new Date().toISOString());
+    var imageUrl = new URL('./assets/sede-sinsermap.jpg', window.location.href).href;
+    var address = [
+      member.endereco,
+      member.bairro,
+      member.cidade,
+      member.uf,
+      formatCep ? formatCep(member.cep) : member.cep
+    ].filter(Boolean).join(' - ');
+
+    return '<!DOCTYPE html>' +
+      '<html lang="pt-BR">' +
+      '<head>' +
+      '<meta charset="UTF-8" />' +
+      '<meta name="viewport" content="width=device-width, initial-scale=1.0" />' +
+      '<title>Ficha do Associado - ' + escapeHtml(member.nome || 'Associado') + '</title>' +
+      '<style>' +
+      '@page { size: A4 portrait; margin: 14mm; }' +
+      ':root { --green:#2f6f46; --green-dark:#214d33; --green-soft:#edf5ef; --text:#1f2d35; --muted:#5e6c74; --border:#d8e0dc; }' +
+      '* { box-sizing:border-box; }' +
+      'html,body { margin:0; padding:0; color:var(--text); font-family:Segoe UI, Tahoma, Arial, sans-serif; background:#fff; }' +
+      'body { -webkit-print-color-adjust:exact; print-color-adjust:exact; font-size:13px; }' +
+      '.page { display:grid; gap:14px; }' +
+      '.header { display:grid; grid-template-columns: 138px 1fr; gap:14px; align-items:center; padding-bottom:12px; border-bottom:3px solid var(--green); }' +
+      '.header img { width:138px; height:94px; object-fit:cover; border-radius:10px; border:1px solid var(--border); }' +
+      '.kicker { color:var(--green); font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.08em; }' +
+      'h1 { margin:4px 0 2px; color:var(--green-dark); font-size:26px; line-height:1.1; }' +
+      '.subtitle { margin:0; color:var(--muted); line-height:1.45; }' +
+      '.hero { padding:14px 16px; border:1px solid #cddbd2; border-radius:10px; background:var(--green-soft); }' +
+      '.hero h2 { margin:0; color:#15291d; font-size:28px; line-height:1.15; }' +
+      '.hero-meta { display:flex; flex-wrap:wrap; gap:8px 16px; margin-top:8px; color:#405047; }' +
+      '.hero-meta span { font-size:12px; }' +
+      '.section { border:1px solid var(--border); border-radius:10px; overflow:hidden; }' +
+      '.section h3 { margin:0; padding:9px 12px; color:#fff; background:var(--green); font-size:13px; text-transform:uppercase; letter-spacing:.04em; }' +
+      '.grid { display:grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap:0; }' +
+      '.profile-field { min-height:56px; padding:10px 12px; border-top:1px solid var(--border); }' +
+      '.profile-field:nth-child(odd) { border-right:1px solid var(--border); }' +
+      '.profile-field span { display:block; color:var(--muted); font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:.04em; }' +
+      '.profile-field strong { display:block; margin-top:4px; color:var(--text); font-size:14px; line-height:1.3; white-space:pre-wrap; }' +
+      '.wide { grid-column:1 / -1; border-right:0 !important; }' +
+      '.status { display:inline-block; min-width:76px; padding:5px 10px; border-radius:999px; text-align:center; font-size:11px; font-weight:800; }' +
+      '.status.ativo { background:#e7f4ec; color:#215537; border:1px solid #c7ddcf; }' +
+      '.status.inativo { background:#f7eeee; color:#8d3831; border:1px solid #e2c5c2; }' +
+      '.footer { margin-top:4px; padding-top:8px; border-top:1px solid var(--border); color:var(--muted); font-size:10px; display:flex; justify-content:space-between; gap:12px; }' +
+      '</style>' +
+      '</head>' +
+      '<body>' +
+      '<main class="page">' +
+      '<header class="header">' +
+      '<img src="' + escapeHtml(imageUrl) + '" alt="Sede do SINSERMAP" />' +
+      '<div><span class="kicker">SINSERMAP</span><h1>Ficha do associado</h1><p class="subtitle">Cadastro individual gerado pelo sistema interno para conferência e atendimento.</p></div>' +
+      '</header>' +
+      '<section class="hero">' +
+      '<h2>' + escapeHtml(member.nome || '-') + '</h2>' +
+      '<div class="hero-meta">' +
+      '<span><strong>Função:</strong> ' + escapeHtml(member.funcao || '-') + '</span>' +
+      '<span><strong>Matrícula:</strong> ' + escapeHtml(member.matricula || '-') + '</span>' +
+      '<span><strong>Status:</strong> <span class="status ' + escapeHtml(normalizeText(member.status || '')) + '">' + escapeHtml(member.status || '-') + '</span></span>' +
+      '</div>' +
+      '</section>' +
+      '<section class="section"><h3>Dados principais</h3><div class="grid">' +
+      memberProfileField('Nome completo', member.nome) +
+      memberProfileField('CPF', formatCpf(member.cpf)) +
+      memberProfileField('RG', member.rg) +
+      memberProfileField('Data de nascimento', formatDate(member.dataNascimento)) +
+      memberProfileField('Telefone', formatPhone(member.telefone)) +
+      memberProfileField('E-mail', member.email) +
+      '</div></section>' +
+      '<section class="section"><h3>Dados funcionais</h3><div class="grid">' +
+      memberProfileField('Função / cargo', member.funcao) +
+      memberProfileField('Matrícula', member.matricula) +
+      memberProfileField('Data de admissão', formatDate(member.dataAdmissao)) +
+      memberProfileField('Data de associação', formatDate(member.dataAssociacao)) +
+      memberProfileField('Onde trabalha', member.localTrabalho) +
+      memberProfileField('Setor', member.setor) +
+      '</div></section>' +
+      '<section class="section"><h3>Endereço e observações</h3><div class="grid">' +
+      memberProfileField('Endereço', address || '-', 'wide') +
+      memberProfileField('CEP', formatCep ? formatCep(member.cep) : member.cep) +
+      memberProfileField('Observações', member.observacoes || '-', 'wide') +
+      '</div></section>' +
+      '<footer class="footer"><span>SINSERMAP • Cadastro de Associados</span><span>Ficha gerada em ' + escapeHtml(generatedAt) + '</span></footer>' +
+      '</main>' +
+      '</body></html>';
+  }
+
+  function printMemberProfile(id) {
+    var member = findReportMemberById(id);
+    var printWindow;
+
+    if (!member) {
+      setMessage('reportMessage', 'Associado não encontrado na consulta atual.', 'error');
       return;
     }
 
+    printWindow = window.open('', '_blank', 'width=900,height=1000');
+
+    if (!printWindow) {
+      setMessage('reportMessage', 'Não foi possível abrir a ficha. Verifique se o navegador bloqueou pop-ups.', 'error');
+      return;
+    }
+
+    printWindow.document.open();
+    printWindow.document.write(buildMemberProfileHtml(member));
+    printWindow.document.close();
+
+    printWindow.onload = function () {
+      printWindow.focus();
+      setTimeout(function () {
+        printWindow.print();
+      }, 250);
+    };
+  }
+
+  async function downloadFullBackup() {
     setMessage('reportMessage', 'Gerando backup completo...', 'success');
 
     try {
@@ -2028,9 +2170,7 @@
 
       api.setSessionToken(response.sessionToken);
       state.user = response.user;
-      state.permissions = response.permissions || state.permissions;
       showApp();
-      applyPermissions();
       resetMemberForm();
       await refreshAll();
     } catch (error) {
@@ -2058,9 +2198,7 @@
     try {
       var response = await api.getApi('session');
       state.user = response.user;
-      state.permissions = response.permissions || state.permissions;
       showApp();
-      applyPermissions();
       resetMemberForm();
       await refreshAll();
     } catch (error) {
@@ -2113,7 +2251,7 @@
     if (byId('quickSearchForm')) {
       byId('quickSearchForm').addEventListener('submit', quickSearch);
     }
-    byId('loadReportBtn').addEventListener('click', loadReport);
+    byId('loadReportBtn').addEventListener('click', searchReport);
     if (byId('clearReportFiltersBtn')) {
       byId('clearReportFiltersBtn').addEventListener('click', clearReportFilters);
     }
@@ -2134,6 +2272,11 @@
     if (byId('reportPageSize')) {
       byId('reportPageSize').addEventListener('change', changeReportPageSize);
     }
+
+    if (byId('clearFunctionFilterBtn')) {
+      byId('clearFunctionFilterBtn').addEventListener('click', clearFunctionFilter);
+    }
+
     if (byId('exportConsultCsvBtn')) {
       byId('exportConsultCsvBtn').addEventListener('click', exportConsultCsv);
     }
@@ -2174,6 +2317,14 @@
       });
     });
 
+    document.addEventListener('dblclick', function (event) {
+      var printMemberTarget = event.target.closest('[data-print-member]');
+
+      if (printMemberTarget) {
+        printMemberProfile(printMemberTarget.getAttribute('data-print-member'));
+      }
+    });
+
     document.addEventListener('click', function (event) {
       var editButton = event.target.closest('[data-edit-member]');
       if (editButton) {
@@ -2192,12 +2343,38 @@
 
       var reportFunctionRow = event.target.closest('[data-report-funcao]');
       if (reportFunctionRow) {
+        var selectedFuncao = reportFunctionRow.getAttribute('data-report-funcao');
+
         document.querySelectorAll('[data-report-funcao]').forEach(function (row) {
           row.classList.remove('is-selected');
         });
         reportFunctionRow.classList.add('is-selected');
         state.reportPage = 1;
-        renderReportMembers(state.report && state.report.members ? state.report.members : [], reportFunctionRow.getAttribute('data-report-funcao'));
+
+        if (reportHasPartialData()) {
+          setMessage('reportMessage', 'Carregando lista completa para filtrar a funÃ§Ã£o...', 'success');
+          loadReport({
+            silent: true,
+            filters: {
+              sortBy: value('reportSortBy') || 'nome',
+              sortDir: value('reportSortDir') || 'asc'
+            }
+          }).then(function () {
+            renderReportMembers(
+              state.report && state.report.members ? state.report.members : [],
+              selectedFuncao
+            );
+            setMessage('reportMessage', 'FunÃ§Ã£o filtrada com a lista completa.', 'success');
+          }).catch(function (error) {
+            setMessage('reportMessage', error.message || 'Falha ao carregar lista completa.', 'error');
+          });
+          return;
+        }
+
+        renderReportMembers(
+          state.report && state.report.members ? state.report.members : [],
+          selectedFuncao
+        );
         return;
       }
 
