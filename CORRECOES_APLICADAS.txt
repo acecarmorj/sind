@@ -1,0 +1,49 @@
+CORREÇÕES APLICADAS - SINSERMAP
+
+1. Segurança do login
+- Removido preenchimento automático de usuário e senha no index.html.
+- Removida criação automática do usuário admin com senha 123456.
+- Adicionada função createInitialAdmin(username, password, name) para criar o primeiro administrador pelo Apps Script.
+- Adicionada função resetUserPassword(username, newPassword) para redefinição segura de senha pelo Apps Script.
+- Bloqueado login com senhas fracas conhecidas, incluindo 123456.
+- Senhas novas exigem pelo menos 8 caracteres, com letras e números.
+
+2. Hash de senha
+- Substituído SHA-256 simples por hash SHA-256 com salt e iterações.
+- Hashes antigos ainda podem ser reconhecidos, mas são atualizados automaticamente após login com senha forte.
+
+3. Sessão e API
+- Sessão passa a ser guardada preferencialmente em sessionStorage.
+- Chamadas autenticadas feitas por POST, evitando token de sessão na URL.
+- Painel público continua podendo usar GET sem sessão.
+
+4. Permissões
+- Criados perfis:
+  ADMIN: acesso total, usuários, configurações, painel público e backup.
+  OPERADOR: cadastro, edição, inativação, consulta, relatórios e importação.
+  LEITURA: consulta e relatórios.
+- Regras aplicadas no back-end e refletidas no front-end.
+
+5. Associados
+- Exclusão física de associados substituída por inativação.
+- CPF validado por dígitos verificadores.
+- CPF e matrícula duplicados são bloqueados para associados ativos.
+- Alerta de duplicidade continua para nome + função.
+
+6. Backup
+- Corrigido erro em backupFull_ que passava objeto de planilha onde a função esperava nome da aba.
+- Backup completo agora é restrito a administradores.
+
+7. Interface e documentação
+- Adicionado seletor de perfil no cadastro de usuários.
+- Botões e abas são exibidos conforme permissões.
+- Botão de exportação renomeado para “Exportar Excel compatível”.
+- README.md e COMANDOS_DEMO.txt atualizados.
+
+8. Pacote
+- Pasta .git removida do ZIP final.
+- api.txt mantido idêntico a backend/Code.gs.
+
+11. Garantia de administrador
+- O usuário admin agora é automaticamente mantido com perfil ADMIN e status ATIVO durante a atualização do banco.
+- Adicionada função grantAdminPrivilegesToAdminUser() para corrigir bases existentes em que admin esteja como OPERADOR, USUARIO, LEITURA ou INATIVO.

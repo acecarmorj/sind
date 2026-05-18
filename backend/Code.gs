@@ -3,7 +3,7 @@ var ASSOC_SETUP = {
   SPREADSHEET_NAME: 'db_associados_sinsermap',
   SPREADSHEET_ID: '',
   ADMIN_USERNAME: 'admin',
-  ADMIN_PASSWORD: '123456',
+  ADMIN_PASSWORD: '',
   ADMIN_NAME: 'Administrador',
   UNION_NAME: 'SINSERMAP - Sindicato dos Servidores Públicos Municipais de Além Paraíba'
 };
@@ -12,13 +12,10 @@ var ASSOC_SECURITY = {
   PROP_SPREADSHEET_ID: 'ASSOC_SPREADSHEET_ID',
   PROP_UNION_NAME: 'ASSOC_UNION_NAME',
   SESSION_PREFIX: 'ASSOC_SESSION_',
-  SESSION_TTL_SECONDS: 21600
-};
-
-var ASSOC_CACHE = {
-  MEMBERS_KEY: 'ASSOC_MEMBERS_V2',
-  TTL_SECONDS: 300,
-  CHUNK_SIZE: 80000
+  SESSION_TTL_SECONDS: 21600,
+  PASSWORD_HASH_VERSION: 'SHA256_ITERATED_V1',
+  PASSWORD_HASH_ITERATIONS: 12000,
+  PASSWORD_MIN_LENGTH: 8
 };
 
 var ASSOC_SHEETS = {
@@ -131,9 +128,97 @@ function setupDatabase() {
     ok: true,
     spreadsheetId: spreadsheet.getId(),
     spreadsheetName: spreadsheet.getName(),
-    message: 'Banco criado/atualizado nesta planilha.'
+    message: getInitialAdminStatusMessage_()
   };
 }
+
+
+function createInitialAdmin(username, password, name) {
+  ensureDatabase_(getSpreadsheet_());
+
+  var users = sheetToObjects_(ASSOC_SHEETS.USERS);
+  var normalized = normalizeUser_({
+    username: username || ASSOC_SETUP.ADMIN_USERNAME,
+    password: password,
+    nome: name || ASSOC_SETUP.ADMIN_NAME,
+    role: 'ADMIN'
+  });
+  var now = nowIso_();
+
+  if (users.some(function (user) {
+    return normalizeUserRole_(user.role) === 'ADMIN' &&
+      String(user.status || 'ATIVO').trim().toUpperCase() === 'ATIVO';
+  })) {
+    throw new Error('Já existe administrador ativo cadastrado.');
+  }
+
+  validateUser_(normalized, users);
+
+  normalized.id = generateId_('USER');
+  normalized.passwordHash = hashPassword_(normalized.password);
+  normalized.role = 'ADMIN';
+  normalized.status = 'ATIVO';
+  normalized.createdAt = now;
+  normalized.updatedAt = now;
+
+  appendObject_(getSheet_(ASSOC_SHEETS.USERS), normalized, USER_HEADERS);
+  audit_('CRIAR_ADMIN_INICIAL', 'Usuarios', normalized.id, normalized.username, normalized.username);
+
+  return 'Administrador inicial criado com segurança.';
+}
+
+function grantAdminPrivilegesToAdminUser() {
+  ensureDatabase_(getSpreadsheet_());
+
+  var result = ensureAdminUserPrivileges_(true);
+
+  if (!result.found) {
+    throw new Error('Usuário admin não encontrado. Crie primeiro com createInitialAdmin("admin", "SENHA_FORTE_AQUI", "Administrador").');
+  }
+
+  if (result.changed) {
+    return 'Usuário admin atualizado para ADMIN e ATIVO.';
+  }
+
+  return 'Usuário admin já está com perfil ADMIN e status ATIVO.';
+}
+
+function resetUserPassword(username, newPassword) {
+  ensureDatabase_(getSpreadsheet_());
+
+  var normalizedUsername = clean_(username).toLowerCase();
+  var users = sheetToObjects_(ASSOC_SHEETS.USERS);
+  var user = users.find(function (item) {
+    return String(item.username || '').toLowerCase() === normalizedUsername &&
+      String(item.status || 'ATIVO').trim().toUpperCase() === 'ATIVO';
+  });
+
+  if (!user) {
+    throw new Error('Usuário ativo não encontrado.');
+  }
+
+  assertStrongPassword_(String(newPassword || ''));
+  user.passwordHash = hashPassword_(newPassword);
+  user.updatedAt = nowIso_();
+
+  updateRow_(getSheet_(ASSOC_SHEETS.USERS), user._rowNumber, user, USER_HEADERS);
+  audit_('REDEFINIR_SENHA', 'Usuarios', user.id, normalizedUsername, user.username);
+
+  return 'Senha redefinida.';
+}
+
+function getInitialAdminStatusMessage_() {
+  var hasActiveUser = sheetToObjects_(ASSOC_SHEETS.USERS).some(function (user) {
+    return String(user.status || 'ATIVO').trim().toUpperCase() === 'ATIVO';
+  });
+
+  if (hasActiveUser) {
+    return 'Banco criado/atualizado nesta planilha.';
+  }
+
+  return 'Banco criado/atualizado. Crie o primeiro administrador executando createInitialAdmin("admin", "SENHA_FORTE_AQUI", "Administrador").';
+}
+
 
 function doOptions() {
   return jsonResponse_({
@@ -183,6 +268,8 @@ function buildRequest_(e, method) {
 }
 
 function dispatch_(request) {
+  var user;
+
   if (!request.action) {
     throw new Error('Ação não informada.');
   }
@@ -197,21 +284,23 @@ function dispatch_(request) {
       return logout_(request.sessionToken);
 
     case 'session':
+      user = requireSession_(request.sessionToken);
       return {
-        user: requireSession_(request.sessionToken),
+        user: user,
+        permissions: permissionsForRole_(user.role),
         unionName: getUnionName_()
       };
 
     case 'dashboard':
-      requireSession_(request.sessionToken);
+      requireRole_(request.sessionToken, ['ADMIN', 'OPERADOR', 'LEITURA']);
       return dashboard_();
 
     case 'app_bootstrap':
-      requireSession_(request.sessionToken);
-      return appBootstrap_();
+      user = requireRole_(request.sessionToken, ['ADMIN', 'OPERADOR', 'LEITURA']);
+      return appBootstrap_(user);
 
     case 'options':
-      requireSession_(request.sessionToken);
+      requireRole_(request.sessionToken, ['ADMIN', 'OPERADOR', 'LEITURA']);
       return {
         options: getOptions_()
       };
@@ -223,96 +312,105 @@ function dispatch_(request) {
       };
 
     case 'public_items_list':
-      requireSession_(request.sessionToken);
+      requireRole_(request.sessionToken, ['ADMIN']);
       return {
         items: listPublicItems_(true)
       };
 
     case 'public_item_save':
+      user = requireRole_(request.sessionToken, ['ADMIN']);
       return {
-        item: savePublicItem_(request.payload, requireSession_(request.sessionToken)),
+        item: savePublicItem_(request.payload, user),
         items: listPublicItems_(true)
       };
 
     case 'public_item_delete':
-      deletePublicItem_(request.payload, requireSession_(request.sessionToken));
+      user = requireRole_(request.sessionToken, ['ADMIN']);
+      deletePublicItem_(request.payload, user);
       return {
         items: listPublicItems_(true)
       };
 
     case 'option_save':
+      user = requireRole_(request.sessionToken, ['ADMIN']);
       return {
-        option: saveOption_(request.payload, requireSession_(request.sessionToken)),
+        option: saveOption_(request.payload, user),
         options: getOptions_()
       };
 
     case 'option_delete':
-      deleteOption_(request.payload, requireSession_(request.sessionToken));
+      user = requireRole_(request.sessionToken, ['ADMIN']);
+      deleteOption_(request.payload, user);
       return {
         options: getOptions_()
       };
 
     case 'users_list':
-      requireSession_(request.sessionToken);
+      requireRole_(request.sessionToken, ['ADMIN']);
       return {
         users: listUsers_()
       };
 
     case 'user_save':
+      user = requireRole_(request.sessionToken, ['ADMIN']);
       return {
-        user: saveUser_(request.payload, requireSession_(request.sessionToken)),
+        user: saveUser_(request.payload, user),
         users: listUsers_()
       };
 
     case 'user_delete':
-      deleteUser_(request.payload, requireSession_(request.sessionToken));
+      user = requireRole_(request.sessionToken, ['ADMIN']);
+      deleteUser_(request.payload, user);
       return {
         users: listUsers_()
       };
 
     case 'members_list':
-      requireSession_(request.sessionToken);
+      requireRole_(request.sessionToken, ['ADMIN', 'OPERADOR', 'LEITURA']);
       return {
         members: listMembers_(request.payload)
       };
 
     case 'member_get':
-      requireSession_(request.sessionToken);
+      requireRole_(request.sessionToken, ['ADMIN', 'OPERADOR', 'LEITURA']);
       return {
         member: getMemberById_(request.payload.id)
       };
 
     case 'member_duplicates':
-      requireSession_(request.sessionToken);
+      requireRole_(request.sessionToken, ['ADMIN', 'OPERADOR']);
       return {
         duplicates: findMemberDuplicates_(request.payload)
       };
 
     case 'member_admission_import':
+      user = requireRole_(request.sessionToken, ['ADMIN', 'OPERADOR']);
       return {
-        result: importMemberAdmissionDates_(request.payload, requireSession_(request.sessionToken))
+        result: importMemberAdmissionDates_(request.payload, user)
       };
 
     case 'member_save':
+      user = requireRole_(request.sessionToken, ['ADMIN', 'OPERADOR']);
       return {
-        member: saveMember_(request.payload, requireSession_(request.sessionToken))
+        member: saveMember_(request.payload, user)
       };
 
     case 'member_delete':
-      deleteMember_(request.payload, requireSession_(request.sessionToken));
+      user = requireRole_(request.sessionToken, ['ADMIN', 'OPERADOR']);
+      deleteMember_(request.payload, user);
       return {
         deleted: true
       };
 
     case 'reports_associados':
-      requireSession_(request.sessionToken);
+      requireRole_(request.sessionToken, ['ADMIN', 'OPERADOR', 'LEITURA']);
       return {
         report: reportAssociados_(request.payload)
       };
 
     case 'backup_full':
       return {
-        backup: backupFull_(requireSession_(request.sessionToken))
+        backup: backupFull_(requireRole_(request.sessionToken, ['ADMIN']))
       };
 
     default:
@@ -351,6 +449,7 @@ function ensureDatabase_(spreadsheet) {
   ensureSheet_(spreadsheet, ASSOC_SHEETS.PUBLIC, PUBLIC_ITEM_HEADERS);
   seedConfig_();
   seedAdminUser_();
+  ensureAdminUserPrivileges_(true);
 }
 
 function ensureSheet_(spreadsheet, sheetName, headers) {
@@ -404,6 +503,12 @@ function seedConfig_() {
 }
 
 function seedAdminUser_() {
+  var password = String(ASSOC_SETUP.ADMIN_PASSWORD || '');
+
+  if (!password) {
+    return;
+  }
+
   var users = sheetToObjects_(ASSOC_SHEETS.USERS);
   var username = String(ASSOC_SETUP.ADMIN_USERNAME || 'admin').toLowerCase();
 
@@ -415,11 +520,13 @@ function seedAdminUser_() {
     return;
   }
 
+  assertStrongPassword_(password);
+
   var now = nowIso_();
   var row = [
     generateId_('USER'),
     username,
-    hash_(ASSOC_SETUP.ADMIN_PASSWORD || '123456'),
+    hashPassword_(password),
     ASSOC_SETUP.ADMIN_NAME || 'Administrador',
     'ADMIN',
     'ATIVO',
@@ -430,6 +537,51 @@ function seedAdminUser_() {
   getSheet_(ASSOC_SHEETS.USERS).appendRow(row);
 }
 
+function ensureAdminUserPrivileges_(reactivate) {
+  var username = String(ASSOC_SETUP.ADMIN_USERNAME || 'admin').toLowerCase();
+  var sheet = getSheet_(ASSOC_SHEETS.USERS);
+  var users = sheetToObjects_(ASSOC_SHEETS.USERS);
+  var admin = users.find(function (user) {
+    return String(user.username || '').toLowerCase() === username;
+  });
+
+  if (!admin) {
+    return {
+      found: false,
+      changed: false
+    };
+  }
+
+  var status = String(admin.status || '').trim().toUpperCase();
+  var changed = false;
+
+  if (String(admin.role || '').trim().toUpperCase() !== 'ADMIN') {
+    admin.role = 'ADMIN';
+    changed = true;
+  }
+
+  if (reactivate && status !== 'ATIVO') {
+    admin.status = 'ATIVO';
+    changed = true;
+  }
+
+  if (!admin.nome) {
+    admin.nome = ASSOC_SETUP.ADMIN_NAME || 'Administrador';
+    changed = true;
+  }
+
+  if (changed) {
+    admin.updatedAt = nowIso_();
+    updateRow_(sheet, admin._rowNumber, admin, USER_HEADERS);
+    audit_('GARANTIR_ADMIN', 'Usuarios', admin.id, username, 'Usuário admin configurado como ADMIN e ATIVO.');
+  }
+
+  return {
+    found: true,
+    changed: changed
+  };
+}
+
 function login_(payload) {
   var username = String(payload.username || '').trim().toLowerCase();
   var password = String(payload.password || '');
@@ -438,17 +590,25 @@ function login_(payload) {
     throw new Error('Informe usuário e senha.');
   }
 
-  var users = sheetToObjects_(ASSOC_SHEETS.USERS);
-  var passwordHash = hash_(password);
+  if (isWeakPassword_(password)) {
+    throw new Error('Senha insegura bloqueada. Redefina a senha pelo Apps Script antes de acessar.');
+  }
 
+  var users = sheetToObjects_(ASSOC_SHEETS.USERS);
   var user = users.find(function (item) {
     return String(item.username || '').toLowerCase() === username &&
-      item.passwordHash === passwordHash &&
-      String(item.status || '').toUpperCase() === 'ATIVO';
+      String(item.status || '').toUpperCase() === 'ATIVO' &&
+      verifyPassword_(password, item.passwordHash);
   });
 
   if (!user) {
     throw new Error('Usuário ou senha inválidos.');
+  }
+
+  if (isLegacyPasswordHash_(user.passwordHash)) {
+    user.passwordHash = hashPassword_(password);
+    user.updatedAt = nowIso_();
+    updateRow_(getSheet_(ASSOC_SHEETS.USERS), user._rowNumber, user, USER_HEADERS);
   }
 
   var safeUser = safeUser_(user);
@@ -457,6 +617,7 @@ function login_(payload) {
   return {
     sessionToken: createSession_(safeUser),
     user: safeUser,
+    permissions: permissionsForRole_(safeUser.role),
     unionName: getUnionName_()
   };
 }
@@ -508,7 +669,7 @@ function requireSession_(sessionToken) {
     throw new Error('Sessão expirada. Faça login novamente.');
   }
 
-  var activeUser = sheetToObjects_(ASSOC_SHEETS.USERS).some(function (user) {
+  var activeUser = sheetToObjects_(ASSOC_SHEETS.USERS).find(function (user) {
     return String(user.username || '').toLowerCase() === String(session.username || '').toLowerCase() &&
       String(user.status || 'ATIVO').trim().toUpperCase() === 'ATIVO';
   });
@@ -519,11 +680,61 @@ function requireSession_(sessionToken) {
   }
 
   return {
-    username: session.username,
-    nome: session.nome,
-    role: session.role
+    username: activeUser.username,
+    nome: activeUser.nome,
+    role: effectiveUserRole_(activeUser)
   };
 }
+
+
+function effectiveUserRole_(user) {
+  if (String(user.username || '').toLowerCase() === String(ASSOC_SETUP.ADMIN_USERNAME || 'admin').toLowerCase()) {
+    return 'ADMIN';
+  }
+
+  return normalizeUserRole_(user.role);
+}
+
+function requireRole_(sessionToken, allowedRoles) {
+  var user = requireSession_(sessionToken);
+  var userRole = normalizeUserRole_(user.role);
+  var normalizedAllowedRoles = (allowedRoles || []).map(normalizeUserRole_);
+
+  if (normalizedAllowedRoles.indexOf(userRole) === -1) {
+    throw new Error('Acesso negado para o perfil ' + userRole + '.');
+  }
+
+  user.role = userRole;
+  return user;
+}
+
+function permissionsForRole_(role) {
+  var normalizedRole = normalizeUserRole_(role);
+
+  return {
+    role: normalizedRole,
+    canManageSettings: normalizedRole === 'ADMIN',
+    canManageUsers: normalizedRole === 'ADMIN',
+    canBackup: normalizedRole === 'ADMIN',
+    canEditMembers: normalizedRole === 'ADMIN' || normalizedRole === 'OPERADOR',
+    canViewReports: true
+  };
+}
+
+function normalizeUserRole_(role) {
+  var normalizedRole = String(role || 'LEITURA').trim().toUpperCase();
+
+  if (normalizedRole === 'USUARIO') {
+    return 'OPERADOR';
+  }
+
+  if (['ADMIN', 'OPERADOR', 'LEITURA'].indexOf(normalizedRole) === -1) {
+    return 'LEITURA';
+  }
+
+  return normalizedRole;
+}
+
 
 function listUsers_() {
   return sheetToObjects_(ASSOC_SHEETS.USERS)
@@ -549,14 +760,13 @@ function saveUser_(payload, currentUser) {
     validateUser_(user, users);
 
     user.id = generateId_('USER');
-    user.passwordHash = hash_(user.password);
-    user.role = 'USUARIO';
+    user.passwordHash = hashPassword_(user.password);
     user.status = 'ATIVO';
     user.createdAt = now;
     user.updatedAt = now;
 
     appendObject_(sheet, user, USER_HEADERS);
-    audit_('CRIAR_USUARIO', 'Usuarios', user.id, currentUser.username, user.username);
+    audit_('CRIAR_USUARIO', 'Usuarios', user.id, currentUser.username, user.username + ' / ' + user.role);
 
     return safeUserForList_(user);
   } finally {
@@ -603,7 +813,7 @@ function normalizeUser_(payload) {
     username: clean_(payload.username).toLowerCase(),
     password: String(payload.password || ''),
     nome: clean_(payload.nome),
-    role: 'USUARIO',
+    role: normalizeUserRole_(payload.role || 'OPERADOR'),
     status: 'ATIVO',
     createdAt: clean_(payload.createdAt),
     updatedAt: clean_(payload.updatedAt)
@@ -623,9 +833,7 @@ function validateUser_(user, users) {
     throw new Error('Use usuário com 3 a 40 caracteres: letras, números, ponto, hífen ou sublinhado.');
   }
 
-  if (!user.password || user.password.length < 4) {
-    throw new Error('A senha deve ter pelo menos 4 caracteres.');
-  }
+  assertStrongPassword_(user.password);
 
   var duplicate = users.find(function (item) {
     return String(item.status || 'ATIVO').trim().toUpperCase() === 'ATIVO' &&
@@ -642,21 +850,23 @@ function safeUserForList_(user) {
     id: user.id,
     username: user.username,
     nome: user.nome,
-    role: user.role || 'USUARIO',
+    role: effectiveUserRole_(user),
     status: String(user.status || 'ATIVO').trim().toUpperCase(),
     createdAt: user.createdAt,
     updatedAt: user.updatedAt
   };
 }
 
-function appBootstrap_() {
+function appBootstrap_(user) {
   var members = readMembers_();
+  var permissions = permissionsForRole_(user.role);
 
   return {
     dashboard: dashboardFromMembers_(members),
     options: getOptionsFromMembers_(members),
-    users: listUsers_(),
-    publicItems: listPublicItems_(true)
+    users: permissions.canManageUsers ? listUsers_() : [],
+    publicItems: permissions.canManageSettings ? listPublicItems_(true) : listPublicItems_(false),
+    permissions: permissions
   };
 }
 
@@ -666,7 +876,9 @@ function dashboard_() {
 
 function dashboardFromMembers_(members) {
   var cleanMembers = members.map(function (member) {
-    return publicMemberCopy_(member);
+    var copy = extend_({}, member);
+    delete copy._rowNumber;
+    return copy;
   });
 
   sortMembers_(cleanMembers, 'updatedAt', 'desc');
@@ -1022,11 +1234,13 @@ function sortPublicItems_(items) {
 
 
 function backupFull_(user) {
-  var members = readMembers_(true).map(function (member) {
-    return publicMemberCopy_(member);
+  var members = readMembers_().map(function (member) {
+    var copy = extend_({}, member);
+    delete copy._rowNumber;
+    return copy;
   });
 
-  var auditItems = sheetToObjects_(getSheet_(ASSOC_SHEETS.AUDIT), AUDIT_HEADERS).map(function (item) {
+  var auditItems = sheetToObjects_(ASSOC_SHEETS.AUDIT).map(function (item) {
     delete item._rowNumber;
     return item;
   });
@@ -1049,15 +1263,7 @@ function backupFull_(user) {
 }
 
 function listMembers_(filters) {
-  var safeFilters = filters || {};
-  var members = filterMembers_(readMembers_(), safeFilters);
-  var limit = Number(safeFilters.limit || 0);
-
-  if (limit > 0) {
-    return members.slice(0, Math.min(limit, 200));
-  }
-
-  return members;
+  return filterMembers_(readMembers_(), filters || {});
 }
 
 function getMemberById_(id) {
@@ -1075,7 +1281,8 @@ function getMemberById_(id) {
     throw new Error('Associado não encontrado.');
   }
 
-  return publicMemberCopy_(member);
+  delete member._rowNumber;
+  return member;
 }
 
 
@@ -1211,10 +1418,6 @@ function importMemberAdmissionDates_(payload, user) {
       user.username,
       'Linhas: ' + result.total + ' | Atualizadas: ' + result.updated + ' | Não atualizadas: ' + result.skipped
     );
-
-    if (result.updated > 0) {
-      invalidateMembersCache_();
-    }
 
     return result;
   } finally {
@@ -1378,7 +1581,6 @@ function saveMember_(payload, user) {
       member.updatedAt = now;
 
       updateRow_(sheet, existing._rowNumber, member, MEMBER_HEADERS);
-      invalidateMembersCache_();
       audit_('ATUALIZAR_ASSOCIADO', 'Associados', member.id, user.username, member.nome);
     } else {
       member.id = generateId_('ASSOC');
@@ -1386,7 +1588,6 @@ function saveMember_(payload, user) {
       member.updatedAt = now;
 
       appendObject_(sheet, member, MEMBER_HEADERS);
-      invalidateMembersCache_();
       audit_('CRIAR_ASSOCIADO', 'Associados', member.id, user.username, member.nome);
     }
 
@@ -1409,19 +1610,18 @@ function deleteMember_(payload, user) {
     });
 
     if (!memberId) {
-      throw new Error('Associado não informado para exclusão.');
+      throw new Error('Associado não informado para inativação.');
     }
 
     if (!existing) {
-      throw new Error('Associado não encontrado para exclusão.');
+      throw new Error('Associado não encontrado para inativação.');
     }
 
-    existing.status = 'EXCLUIDO';
+    existing.status = 'INATIVO';
     existing.updatedAt = nowIso_();
 
     updateRow_(sheet, existing._rowNumber, existing, MEMBER_HEADERS);
-    invalidateMembersCache_();
-    audit_('EXCLUIR_ASSOCIADO', 'Associados', existing.id, user.username, existing.nome);
+    audit_('INATIVAR_ASSOCIADO', 'Associados', existing.id, user.username, existing.nome);
   } finally {
     lock.releaseLock();
   }
@@ -1463,14 +1663,36 @@ function validateMember_(member, members) {
     throw new Error('Informe a função/cargo do associado.');
   }
 
-  if (member.cpf && member.cpf.length !== 11) {
-    throw new Error('CPF inválido. Informe 11 dígitos ou deixe em branco.');
+  if (member.cpf && !isValidCpf_(member.cpf)) {
+    throw new Error('CPF inválido. Confira os 11 dígitos do CPF.');
   }
 
-  if (member.email && member.email.indexOf('@') === -1) {
+  if (member.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(member.email)) {
     throw new Error('E-mail inválido.');
   }
 
+  var duplicateCpf = members.find(function (item) {
+    return item.id !== member.id &&
+      member.cpf &&
+      String(item.cpf || '') === member.cpf &&
+      String(item.status || 'ATIVO').trim().toUpperCase() === 'ATIVO';
+  });
+
+  if (duplicateCpf) {
+    throw new Error('Já existe associado ativo com este CPF: ' + duplicateCpf.nome + '.');
+  }
+
+  var memberMatricula = normalizeText_(member.matricula || '');
+  var duplicateMatricula = members.find(function (item) {
+    return item.id !== member.id &&
+      memberMatricula &&
+      normalizeText_(item.matricula || '') === memberMatricula &&
+      String(item.status || 'ATIVO').trim().toUpperCase() === 'ATIVO';
+  });
+
+  if (duplicateMatricula) {
+    throw new Error('Já existe associado ativo com esta matrícula: ' + duplicateMatricula.nome + '.');
+  }
 }
 
 function reportAssociados_(filters) {
@@ -1567,32 +1789,16 @@ function filterMembers_(members, filters) {
 
   sortMembers_(result, filters.sortBy, filters.sortDir);
 
-  return result.map(function (member) {
-    return publicMemberCopy_(member);
-  });
-}
-
-function publicMemberCopy_(member, summaryOnly) {
-  var copy = extend_({}, member || {});
-
-  delete copy._rowNumber;
-  delete copy._index;
-
-  if (!summaryOnly) {
-    return copy;
+  var limit = Number(filters.limit || 0);
+  if (limit > 0) {
+    result = result.slice(0, limit);
   }
 
-  return {
-    id: copy.id,
-    nome: copy.nome,
-    telefone: copy.telefone,
-    localTrabalho: copy.localTrabalho,
-    setor: copy.setor,
-    funcao: copy.funcao,
-    matricula: copy.matricula,
-    dataAdmissao: copy.dataAdmissao,
-    status: copy.status || 'ATIVO'
-  };
+  return result.map(function (member) {
+    var copy = extend_({}, member);
+    delete copy._rowNumber;
+    return copy;
+  });
 }
 
 function sortMembers_(members, sortBy, sortDir) {
@@ -1618,127 +1824,11 @@ function sortMembers_(members, sortBy, sortDir) {
   });
 }
 
-function readMembers_(includeDeleted) {
-  return readMembersCached_().map(function (member) {
+function readMembers_() {
+  return sheetToObjects_(ASSOC_SHEETS.MEMBERS).map(function (member) {
     member.status = member.status || 'ATIVO';
     return member;
-  }).filter(function (member) {
-    return includeDeleted || member.status !== 'EXCLUIDO';
   });
-}
-
-function readMembersCached_() {
-  var cached = getCachedJson_(ASSOC_CACHE.MEMBERS_KEY);
-
-  if (cached) {
-    return cached;
-  }
-
-  cached = sheetToObjects_(ASSOC_SHEETS.MEMBERS);
-  putCachedJson_(ASSOC_CACHE.MEMBERS_KEY, cached, ASSOC_CACHE.TTL_SECONDS);
-  return cached;
-}
-
-function cache_() {
-  try {
-    return CacheService.getScriptCache();
-  } catch (error) {
-    return null;
-  }
-}
-
-function getCachedJson_(key) {
-  var cache = cache_();
-  var metaRaw;
-  var meta;
-  var chunks = [];
-  var i;
-  var chunk;
-
-  if (!cache) {
-    return null;
-  }
-
-  metaRaw = cache.get(key + ':meta');
-  if (!metaRaw) {
-    return null;
-  }
-
-  try {
-    meta = JSON.parse(metaRaw);
-
-    for (i = 0; i < meta.chunks; i += 1) {
-      chunk = cache.get(key + ':' + i);
-      if (chunk == null) {
-        return null;
-      }
-
-      chunks.push(chunk);
-    }
-
-    return JSON.parse(chunks.join(''));
-  } catch (error) {
-    removeCachedJson_(key);
-    return null;
-  }
-}
-
-function putCachedJson_(key, value, ttlSeconds) {
-  var cache = cache_();
-  var json;
-  var chunks;
-  var i;
-
-  if (!cache) {
-    return;
-  }
-
-  removeCachedJson_(key);
-  json = JSON.stringify(value || []);
-  chunks = Math.ceil(json.length / ASSOC_CACHE.CHUNK_SIZE);
-
-  for (i = 0; i < chunks; i += 1) {
-    cache.put(
-      key + ':' + i,
-      json.slice(i * ASSOC_CACHE.CHUNK_SIZE, (i + 1) * ASSOC_CACHE.CHUNK_SIZE),
-      ttlSeconds || ASSOC_CACHE.TTL_SECONDS
-    );
-  }
-
-  cache.put(key + ':meta', JSON.stringify({ chunks: chunks }), ttlSeconds || ASSOC_CACHE.TTL_SECONDS);
-}
-
-function removeCachedJson_(key) {
-  var cache = cache_();
-  var metaRaw;
-  var meta;
-  var keys = [key + ':meta'];
-  var i;
-
-  if (!cache) {
-    return;
-  }
-
-  metaRaw = cache.get(key + ':meta');
-
-  if (metaRaw) {
-    try {
-      meta = JSON.parse(metaRaw);
-      for (i = 0; i < meta.chunks; i += 1) {
-        keys.push(key + ':' + i);
-      }
-    } catch (error) {
-      for (i = 0; i < 20; i += 1) {
-        keys.push(key + ':' + i);
-      }
-    }
-  }
-
-  cache.removeAll(keys);
-}
-
-function invalidateMembersCache_() {
-  removeCachedJson_(ASSOC_CACHE.MEMBERS_KEY);
 }
 
 function getSheet_(sheetName) {
@@ -1891,7 +1981,7 @@ function safeUser_(user) {
   return {
     username: user.username,
     nome: user.nome,
-    role: user.role
+    role: effectiveUserRole_(user)
   };
 }
 
@@ -1941,6 +2031,99 @@ function generateId_(prefix) {
     Utilities.formatDate(new Date(), Session.getScriptTimeZone() || 'America/Sao_Paulo', 'yyyyMMddHHmmss') +
     '-' +
     Utilities.getUuid().slice(0, 8).toUpperCase();
+}
+
+
+function assertStrongPassword_(password) {
+  var text = String(password || '');
+
+  if (text.length < ASSOC_SECURITY.PASSWORD_MIN_LENGTH) {
+    throw new Error('A senha deve ter pelo menos ' + ASSOC_SECURITY.PASSWORD_MIN_LENGTH + ' caracteres.');
+  }
+
+  if (!/[A-Za-zÀ-ÿ]/.test(text) || !/\d/.test(text)) {
+    throw new Error('A senha deve conter letras e números.');
+  }
+
+  if (isWeakPassword_(text)) {
+    throw new Error('Escolha uma senha mais forte.');
+  }
+}
+
+function isWeakPassword_(password) {
+  var weakPasswords = ['123456', '12345678', 'senha123', 'admin123', 'password', 'sinsermap'];
+
+  return weakPasswords.indexOf(String(password || '').toLowerCase()) !== -1;
+}
+
+function hashPassword_(password, salt, iterations) {
+  var passwordSalt = salt || Utilities.getUuid().replace(/-/g, '');
+  var totalIterations = Number(iterations || ASSOC_SECURITY.PASSWORD_HASH_ITERATIONS);
+  var current = passwordSalt + ':' + String(password || '');
+
+  for (var index = 0; index < totalIterations; index += 1) {
+    current = hash_(current);
+  }
+
+  return [
+    ASSOC_SECURITY.PASSWORD_HASH_VERSION,
+    String(totalIterations),
+    passwordSalt,
+    current
+  ].join('$');
+}
+
+function verifyPassword_(password, storedHash) {
+  var hashValue = String(storedHash || '');
+
+  if (isLegacyPasswordHash_(hashValue)) {
+    return hashValue === hash_(password);
+  }
+
+  var parts = hashValue.split('$');
+
+  if (parts.length !== 4 || parts[0] !== ASSOC_SECURITY.PASSWORD_HASH_VERSION) {
+    return false;
+  }
+
+  return hashPassword_(password, parts[2], Number(parts[1])) === hashValue;
+}
+
+function isLegacyPasswordHash_(storedHash) {
+  return /^[a-f0-9]{64}$/i.test(String(storedHash || ''));
+}
+
+function isValidCpf_(value) {
+  var cpf = onlyDigits_(value);
+  var sum;
+  var rest;
+  var index;
+
+  if (!/^\d{11}$/.test(cpf) || /^(\d)\1{10}$/.test(cpf)) {
+    return false;
+  }
+
+  sum = 0;
+  for (index = 0; index < 9; index += 1) {
+    sum += Number(cpf.charAt(index)) * (10 - index);
+  }
+
+  rest = (sum * 10) % 11;
+  rest = rest === 10 ? 0 : rest;
+
+  if (rest !== Number(cpf.charAt(9))) {
+    return false;
+  }
+
+  sum = 0;
+  for (index = 0; index < 10; index += 1) {
+    sum += Number(cpf.charAt(index)) * (11 - index);
+  }
+
+  rest = (sum * 10) % 11;
+  rest = rest === 10 ? 0 : rest;
+
+  return rest === Number(cpf.charAt(10));
 }
 
 function hash_(value) {

@@ -2,12 +2,14 @@ TESTE RÁPIDO
 
 1. Abra index.html depois de configurar assets/runtime-config.js.
 2. O painel público abre sem senha.
-3. Clique em Área interna e entre com admin / 123456.
-4. Vá em Configuração e cadastre uma opção de Onde trabalha, Setor e Função/cargo.
-5. Cadastre uma informação em Painel público e um usuário de teste, se desejar.
-6. Cadastre um associado com:
+3. No Apps Script, crie o primeiro administrador com createInitialAdmin('admin', 'SuaSenhaForte2026', 'Administrador').
+   Se o usuário admin já existir sem privilégio, execute grantAdminPrivilegesToAdminUser().
+4. Abra index.html e entre com o usuário e a senha criados.
+5. Vá em Configuração e cadastre uma opção de Onde trabalha, Setor e Função/cargo.
+6. Cadastre uma informação em Painel público e um usuário de teste, se desejar.
+7. Cadastre um associado com:
    - Onde trabalha: Prefeitura Municipal
    - Setor: Educação
    - Função: Professor
-7. Vá em Consultar e filtre por Professor.
-8. Vá em Relatórios e gere relatório por local, setor e função.
+8. Vá em Consultar e filtre por Professor.
+9. Vá em Relatórios e gere relatório por local, setor e função.
