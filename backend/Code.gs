@@ -1026,7 +1026,7 @@ function backupFull_(user) {
     return publicMemberCopy_(member);
   });
 
-  var auditItems = sheetToObjects_(getSheet_(ASSOC_SHEETS.AUDIT), AUDIT_HEADERS).map(function (item) {
+  var auditItems = sheetToObjects_(ASSOC_SHEETS.AUDIT).map(function (item) {
     delete item._rowNumber;
     return item;
   });

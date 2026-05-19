@@ -1994,6 +1994,198 @@
       '</body></html>';
   }
 
+
+  function conferencePrintValue(value, formatter) {
+    var formatted = formatter ? formatter(value) : value;
+    var display = formatted && formatted !== '-' ? formatted : '';
+    var currentValue = display ?
+      '<strong>' + escapeHtml(display) + '</strong>' :
+      '<strong class="empty-current">&nbsp;</strong>';
+
+    return currentValue + '<span class="write-area"></span>';
+  }
+
+  function conferenceField(label, value, formatter, className) {
+    return '<td class="' + escapeHtml(className || '') + '">' +
+      '<span>' + escapeHtml(label) + '</span>' +
+      conferencePrintValue(value, formatter) +
+      '</td>';
+  }
+
+  function buildConferenceReportHtml(members) {
+    var generatedAt = formatDateTime(new Date().toISOString());
+    var imageUrl = new URL('./assets/sede-sinsermap.jpg', window.location.href).href;
+    var statusTotals = reportStatusTotals(members);
+    var filterItems = reportFilterSummaryItems();
+    var filtersHtml = filterItems.length ?
+      '<section class="filter-box"><h3>Filtros aplicados</h3><div class="filter-grid">' +
+      filterItems.map(function (item) {
+        return '<div class="filter-item"><span>' + escapeHtml(item[0]) + '</span><strong>' + escapeHtml(item[1]) + '</strong></div>';
+      }).join('') +
+      '</div></section>' : '';
+
+    var summaryCards = [
+      ['Total para conferência', members.length],
+      ['Ativos', statusTotals.ativos],
+      ['Inativos', statusTotals.inativos],
+      ['Finalidade', 'Eleição / presença']
+    ].map(function (item) {
+      return '<div class="summary-card"><span>' + escapeHtml(item[0]) + '</span><strong>' + escapeHtml(item[1]) + '</strong></div>';
+    }).join('');
+
+    var rowsHtml = members.map(function (member, index) {
+      var address = [
+        member.endereco,
+        member.bairro,
+        member.cidade,
+        member.uf,
+        formatCep(member.cep)
+      ].filter(function (item) {
+        return item && item !== '-';
+      }).join(' - ');
+
+      var admissionDates = [
+        member.dataAdmissao ? 'Admissão: ' + formatDate(member.dataAdmissao) : '',
+        member.dataAssociacao ? 'Associação: ' + formatDate(member.dataAssociacao) : ''
+      ].filter(Boolean).join(' | ');
+
+      var workInfo = [
+        member.localTrabalho ? 'Local: ' + member.localTrabalho : '',
+        member.setor ? 'Setor: ' + member.setor : ''
+      ].filter(Boolean).join(' | ');
+
+      var roleInfo = [
+        member.funcao ? 'Função: ' + member.funcao : '',
+        member.matricula ? 'Matrícula: ' + member.matricula : ''
+      ].filter(Boolean).join(' | ');
+
+      return '<tbody class="conference-member">' +
+        '<tr>' +
+        '<td class="index-col" rowspan="2"><strong>' + escapeHtml(index + 1) + '</strong><small>' + escapeHtml(member.id || '') + '</small></td>' +
+        conferenceField('Nome completo', member.nome, null, 'name-col') +
+        conferenceField('CPF', member.cpf, formatCpf) +
+        conferenceField('RG', member.rg) +
+        conferenceField('Nascimento', member.dataNascimento, formatDate) +
+        conferenceField('Telefone', member.telefone, formatPhone) +
+        conferenceField('E-mail', member.email, null, 'email-col') +
+        conferenceField('Status', member.status) +
+        '</tr>' +
+        '<tr>' +
+        conferenceField('Endereço / bairro / cidade / CEP', address, null, 'address-col') +
+        conferenceField('Trabalho / setor', workInfo) +
+        conferenceField('Função / matrícula', roleInfo) +
+        conferenceField('Datas', admissionDates) +
+        conferenceField('Observações / correções', member.observacoes, null, 'notes-col') +
+        '<td class="signature-col" colspan="2"><span>Presença / assinatura do associado</span><strong class="empty-current">&nbsp;</strong><span class="write-area signature-area"></span></td>' +
+        '</tr>' +
+      '</tbody>';
+    }).join('');
+
+    return '<!DOCTYPE html>' +
+      '<html lang="pt-BR">' +
+      '<head>' +
+      '<meta charset="UTF-8" />' +
+      '<meta name="viewport" content="width=device-width, initial-scale=1.0" />' +
+      '<title>Lista de Presença e Conferência Cadastral - SINSERMAP</title>' +
+      '<style>' +
+      '@page { size: A4 landscape; margin: 6mm 5mm 8mm; }' +
+      ':root { color-scheme: light; --green:#2f6f46; --green-dark:#245639; --green-soft:#edf5ef; --text:#20313a; --muted:#5f6f79; --border:#d7dfe3; }' +
+      '* { box-sizing:border-box; }' +
+      'html,body { margin:0; padding:0; color:var(--text); font-family:Segoe UI, Tahoma, Arial, sans-serif; font-size:8px; background:#fff; }' +
+      'body { -webkit-print-color-adjust:exact; print-color-adjust:exact; }' +
+      '.page { width:100%; padding-bottom:7mm; }' +
+      '.report-header { display:grid; grid-template-columns: 90px 1fr; gap:7px; align-items:stretch; padding:0 0 4px; border-bottom:1.5px solid var(--green); }' +
+      '.header-figure img { display:block; width:100%; height:50px; object-fit:cover; border-radius:5px; border:1px solid #d8dfdb; }' +
+      '.header-copy { display:flex; flex-direction:column; justify-content:center; }' +
+      '.kicker { color:var(--green); font-size:7.5px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; margin-bottom:1px; }' +
+      '.header-copy h1 { margin:0; color:var(--green-dark); font-size:15px; line-height:1; }' +
+      '.header-copy h2 { margin:1px 0 2px; color:#2b3941; font-size:9.5px; font-weight:700; }' +
+      '.header-copy p { margin:0; color:var(--muted); line-height:1.12; }' +
+      '.header-meta { margin-top:3px; display:flex; gap:8px; flex-wrap:wrap; color:#4c5d66; font-size:7.5px; }' +
+      '.summary-grid { display:grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap:4px; margin:4px 0; }' +
+      '.summary-card { padding:3px 5px; border:1px solid var(--border); border-left:3px solid var(--green); border-radius:4px; background:#fff; }' +
+      '.summary-card span { display:block; color:var(--muted); font-size:6.5px; text-transform:uppercase; letter-spacing:.02em; }' +
+      '.summary-card strong { display:block; margin-top:1px; color:var(--text); font-size:10px; line-height:1; }' +
+      '.filter-box { margin:0 0 4px; padding:3px 5px; background:var(--green-soft); border:1px solid #dbe7dd; border-radius:4px; }' +
+      '.filter-box h3 { margin:0 0 2px; color:var(--green-dark); font-size:8px; }' +
+      '.filter-grid { display:grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap:2px 5px; }' +
+      '.filter-item { display:grid; gap:1px; }' +
+      '.filter-item span { color:var(--muted); font-size:6px; text-transform:uppercase; letter-spacing:.02em; }' +
+      '.filter-item strong { color:var(--text); font-size:7.5px; }' +
+      '.instructions { margin:0 0 4px; padding:3px 5px; border:1px dashed #b8c9bd; border-radius:4px; color:#405047; background:#fbfdfb; line-height:1.12; }' +
+      '.instructions strong { color:var(--green-dark); }' +
+      'table { width:100%; border-collapse:collapse; table-layout:fixed; }' +
+      '.conference-member { break-inside:avoid; page-break-inside:avoid; }' +
+      '.conference-member tr:first-child td { border-top:1.5px solid var(--green); }' +
+      'td { padding:2px 3px; border:1px solid var(--border); vertical-align:top; color:#25353d; word-break:break-word; white-space:normal; min-height:0; }' +
+      'td span:first-child { display:block; color:var(--muted); font-size:5.8px; font-weight:800; text-transform:uppercase; letter-spacing:.02em; }' +
+      'td strong { display:block; min-height:7px; margin-top:1px; color:var(--text); font-size:7.3px; line-height:1.07; font-weight:600; }' +
+      '.empty-current { color:transparent; }' +
+      '.write-area { display:block; height:4px; margin-top:1px; }' +
+      '.signature-area { height:10px; }' +
+      '.index-col { width:4%; text-align:center; background:#f5faf6; }' +
+      '.index-col strong { font-size:9px; }' +
+      '.index-col small { display:block; margin-top:2px; color:#687780; font-size:4.8px; line-height:1; word-break:break-all; }' +
+      '.name-col { width:18%; }' +
+      '.email-col { width:15%; }' +
+      '.address-col { width:24%; }' +
+      '.notes-col { width:18%; }' +
+      '.signature-col { width:14%; }' +
+      '.report-footer { position:fixed; left:0; right:0; bottom:0; padding:3px 5mm 0; border-top:1px solid #d8e0dc; color:#5b6a72; font-size:7px; background:#fff; }' +
+      '.report-footer-inner { display:flex; justify-content:space-between; gap:12px; }' +
+      '.empty-note { padding:18px; border:1px dashed #cfd7db; border-radius:8px; color:#5e6d75; text-align:center; }' +
+      '</style>' +
+      '</head>' +
+      '<body>' +
+      '<div class="page">' +
+      '<header class="report-header">' +
+      '<div class="header-figure"><img src="' + escapeHtml(imageUrl) + '" alt="Sede do SINSERMAP" /></div>' +
+      '<div class="header-copy">' +
+      '<span class="kicker">SINSERMAP</span>' +
+      '<h1>Sindicato dos Servidores Públicos Municipais de Além Paraíba</h1>' +
+      '<h2>Lista de presença e conferência cadastral</h2>' +
+      '<p>Use este documento na eleição para registrar presença, conferir os dados atuais e preencher à caneta os campos em branco ou alterações necessárias.</p>' +
+      '<div class="header-meta">' +
+      '<span><strong>Gerado em:</strong> ' + escapeHtml(generatedAt) + '</span>' +
+      '<span><strong>Usuário:</strong> ' + escapeHtml(state.user && (state.user.nome || state.user.username) || 'Sistema') + '</span>' +
+      '</div>' +
+      '</div>' +
+      '</header>' +
+      '<section class="summary-grid">' + summaryCards + '</section>' +
+      filtersHtml +
+      '<p class="instructions"><strong>Orientação:</strong> colha a assinatura de presença e corrija à caneta os dados em branco ou incorretos.</p>' +
+      (members.length ? '<table>' + rowsHtml + '</table>' : '<div class="empty-note">Nenhum associado encontrado para os filtros informados.</div>') +
+      '</div>' +
+      '<footer class="report-footer"><div class="report-footer-inner"><span>SINSERMAP • Lista de presença e conferência cadastral</span><span>Relatório gerado em ' + escapeHtml(generatedAt) + '</span></div></footer>' +
+      '</body></html>';
+  }
+
+  function printConferenceReport() {
+    if (!state.report) {
+      setMessage('reportMessage', 'Gere o relatório antes de imprimir a conferência.', 'error');
+      return;
+    }
+
+    var members = filteredReportMembers();
+    var printWindow = window.open('', '_blank', 'width=1200,height=900');
+
+    if (!printWindow) {
+      setMessage('reportMessage', 'Não foi possível abrir a janela de impressão. Verifique se o navegador bloqueou pop-ups.', 'error');
+      return;
+    }
+
+    printWindow.document.open();
+    printWindow.document.write(buildConferenceReportHtml(members));
+    printWindow.document.close();
+
+    printWindow.onload = function () {
+      printWindow.focus();
+      setTimeout(function () {
+        printWindow.print();
+      }, 250);
+    };
+  }
+
   function findReportMemberById(id) {
     var members = state.report && state.report.members ? state.report.members : [];
     return members.find(function (member) {
@@ -2256,6 +2448,9 @@
       byId('clearReportFiltersBtn').addEventListener('click', clearReportFilters);
     }
     byId('printReportBtn').addEventListener('click', printReport);
+    if (byId('conferenceReportBtn')) {
+      byId('conferenceReportBtn').addEventListener('click', printConferenceReport);
+    }
 
     if (byId('reportPrevPageBtn')) {
       byId('reportPrevPageBtn').addEventListener('click', function () {
